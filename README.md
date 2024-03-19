@@ -2,17 +2,17 @@
 
 ## Next steps
 
-[] Set up KS solver code
+[x] Set up KS solver code
 
-[] Set up autoencoder training code 
+[ ] Set up autoencoder training code 
 
-[] Set up RL code
+[ ] Set up RL code
 
-[] Decide on some preliminary parameter choices (L, number of actuators etc)
+[ ] Decide on some preliminary parameter choices (L, number of actuators etc)
 
-[] Generate a dataset, for only one L first, then for more
+[ ] Generate a dataset, for only one L first, then for more
 
-[] Train autoencoder
+[ ] Train autoencoder
 
-[] Train RL agent with and w/o autoencoder
+[ ] Train RL agent with and w/o autoencoder
 
