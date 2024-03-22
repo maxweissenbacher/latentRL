@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import numpy as np
 from solver.ks_solver import KS
+from utils.plotting import contourplot_KS
+import matplotlib.pyplot as plt
 
 
 def rollout(u0, policy, num_steps, **kwargs):
@@ -48,23 +50,39 @@ class RandomPolicy(nn.Module):
 if __name__ == '__main__':
     # Specify the arguments for the KS solver
     ks_args = {
-        "actuator_locs": torch.tensor([0., torch.pi]),
+        "actuator_locs": torch.tensor(np.linspace(0.0, 2*np.pi, 5, endpoint=False)),
         "actuator_scale": 0.1,
-        "nu": 0.08,
+        "nu": 0.08156697852139966,
         "N": 256,
-        "dt": 0.5,
+        "dt": 0.05,
     }
+    T = 1000  # total timesteps per rollout
 
     # Make a list of policies
-    # A policy is a function which maps a full state u to an action a
-    random_policy = RandomPolicy(num_actions=2)
-    static_policy = StaticPolicy(torch.tensor([2.0, 2.0]))
+    random_policy = RandomPolicy(num_actions=len(ks_args["actuator_locs"]))
+    zero_policy = StaticPolicy(torch.zeros(len(ks_args["actuator_locs"])))
 
-    # Define the initial condition
-    u0 = torch.zeros(ks_args["N"])
+    policies = {
+        'zero': (zero_policy, 10),
+        'random': (random_policy, 10)
+    }  # contains pairs of policies and number of episodes for that policy
 
-    # Compute a rollout
-    out = rollout(u0, random_policy, 100, **ks_args)
+    outputs = []
+    for _, (policy, num_episodes) in policies.items():
+        for i in range(num_episodes):
+            # Define the initial condition
+            u0 = 1e-2 * np.random.normal(size=ks_args["N"])  # noisy intial data
+            u0 = u0 - u0.mean()
+            u0 = torch.tensor(u0)
 
-    print(out.shape)
+            # Compute a rollout
+            out = rollout(u0, policy=zero_policy, num_steps=T, **ks_args)
+            outputs.append(out)
+
+    # Concatenate and save outputs
+    outputs = np.concatenate(outputs, axis=0)
+    with open('datasets/test.dat', 'wb') as file:
+        np.save(file, outputs)
+
+    print(outputs.shape)
 

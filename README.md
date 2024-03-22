@@ -8,8 +8,8 @@
 
 [ ] Set up RL code
 
-[ ] Decide on some preliminary parameter choices (L, number of actuators etc)
- - $A=5, \sigma=0.1, dt=0.05, T=40, N =$ ?
+[x] Decide on some preliminary parameter choices (L, number of actuators etc)
+ - $A=5, \sigma=0.1, dt=0.05, T=50, N =256$
 
 [ ] Generate a dataset, for only one L first, then for more
 
