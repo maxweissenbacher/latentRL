@@ -60,7 +60,7 @@ class KS:
 
         if action.dtype != torch.float32 or self.B.dtype != torch.float32:
             print(f'Action dtype {action.dtype} || B dtype {self.B.dtype}')
-        f0 = self.B @ action
+        f0 = self.compute_forcing(action)
 
         # semi-implicit third-order runge kutta update.
         # ref: http://journals.ametsoc.org/doi/pdf/10.1175/MWR3214.1
@@ -88,6 +88,9 @@ class KS:
             y += torch.exp(torch.distributions.normal.Normal(loc, self.scale).log_prob(self.x + shift*self.L))
         y = y/torch.max(y)
         return y
+
+    def compute_forcing(self, action):
+        return self.B @ action
 
 
 if __name__ == '__main__':

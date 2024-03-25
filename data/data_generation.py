@@ -18,14 +18,29 @@ def rollout(u0, policy, num_steps, **kwargs):
     solver = KS(**kwargs)
     if not u0.shape[0] == solver.n:
         raise ValueError(f"Solution u0 must have shape [{solver.n}]. Got {u0.shape}")
-    uu = [u0]
+
+    uu = []
+    actions = []
+    forcings = []
+
+    # Initialisation
     u = u0
-    for _ in range(num_steps-1):
-        action = policy(u)
-        u = solver.advance(u, action)
+    action = policy(u0)
+    forcing = solver.compute_forcing(action)
+
+    # Loop and append results to lists
+    for _ in range(num_steps):
         uu.append(u)
+        actions.append(action)
+        forcings.append(forcing)
+        u = solver.advance(u, action)
+        action = policy(u)
+        forcing = solver.compute_forcing(action)
+
     uu = np.asarray(uu)
-    return uu
+    actions = np.asarray(actions)
+    forcings = np.asarray(forcings)
+    return uu, actions, forcings
 
 
 class StaticPolicy(nn.Module):
@@ -67,8 +82,10 @@ if __name__ == '__main__':
         'random': (random_policy, 10)
     }  # contains pairs of policies and number of episodes for that policy
 
-    outputs = []
-    for _, (policy, num_episodes) in policies.items():
+    outputs_u = []
+    outputs_action = []
+    outputs_forcing = []
+    for (policy, num_episodes) in policies.values():
         for i in range(num_episodes):
             # Define the initial condition
             u0 = 1e-2 * np.random.normal(size=ks_args["N"])  # noisy intial data
@@ -76,13 +93,23 @@ if __name__ == '__main__':
             u0 = torch.tensor(u0)
 
             # Compute a rollout
-            out = rollout(u0, policy=zero_policy, num_steps=T, **ks_args)
-            outputs.append(out)
+            uu, actions, forcings = rollout(u0, policy=policy, num_steps=T, **ks_args)
+            outputs_u.append(uu)
+            outputs_action.append(actions)
+            outputs_forcing.append(forcings)
 
     # Concatenate and save outputs
-    outputs = np.concatenate(outputs, axis=0)
-    with open('datasets/test.dat', 'wb') as file:
-        np.save(file, outputs)
+    outputs = {'u': outputs_u, 'action': outputs_action, 'forcing': outputs_forcing}
+    for key, out in outputs.items():
+        out = np.concatenate(out, axis=0)
+        with open(f'datasets/test_{key}.dat', 'wb') as file:
+            np.save(file, out)
 
-    print(outputs.shape)
+    # Print information about the run
+    total_rollouts = sum([n for (_, n) in policies.values()])
+    total_timesteps = T * total_rollouts
+    print("Completed the following rollouts:")
+    for name, (_, num) in policies.items():
+        print(f"\t Policy = {name} with {num} episodes a {T} timesteps each.")
+    print(f"Summary: {total_rollouts} rollouts with {T} timesteps each, so {total_timesteps} time steps in total.")
 
