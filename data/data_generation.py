@@ -82,9 +82,7 @@ if __name__ == '__main__':
         'random': (random_policy, 10)
     }  # contains pairs of policies and number of episodes for that policy
 
-    outputs_u = []
-    outputs_action = []
-    outputs_forcing = []
+    outputs = {'u': [], 'action': [], 'forcing': []}
     for (policy, num_episodes) in policies.values():
         for i in range(num_episodes):
             # Define the initial condition
@@ -94,12 +92,11 @@ if __name__ == '__main__':
 
             # Compute a rollout
             uu, actions, forcings = rollout(u0, policy=policy, num_steps=T, **ks_args)
-            outputs_u.append(uu)
-            outputs_action.append(actions)
-            outputs_forcing.append(forcings)
+            outputs['u'].append(uu)
+            outputs['action'].append(actions)
+            outputs['forcing'].append(forcings)
 
     # Concatenate and save outputs
-    outputs = {'u': outputs_u, 'action': outputs_action, 'forcing': outputs_forcing}
     for key, out in outputs.items():
         out = np.concatenate(out, axis=0)
         with open(f'datasets/test_{key}.dat', 'wb') as file:
