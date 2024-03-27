@@ -8,7 +8,7 @@ random.seed(0)
 
 class CAE(nn.Module):
     """
-    Convolutional Autoencoder (CAE) neural network model, right now configured for input of shape (batch, channel=1, N_x=512).
+    Convolutional Autoencoder (CAE) neural network model, right now configured for input of shape (batch, channel=1, N_x=256).
 
     The encoder and decoder both use Conv1d. Only tunable parameter is the latent dimension.
     """

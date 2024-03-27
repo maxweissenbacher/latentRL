@@ -12,7 +12,7 @@ import warnings
 from utils.config_tools import save_config
 from utils.losses import LossTracker
 from utils.earlystopping import EarlyStopper
-from utils.preprocessing import normalize_data, train_valid_test_split
+from utils.preprocessing import load_U_from_dat
 from convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -39,29 +39,22 @@ def train():
 
     # Start by setting up the data - code structure to be improved @Elise
     ks_data = {
-        'downsample': 5,
         'L': 22,
-        'N_data': 400000,
-        'N_trans': 5000,
         'dt': 0.05,
         'N_x': 256,
-        'train_ratio': 0.25,
-        'valid_ratio': 0.1,
         'batchsize': 128,
-        'normtype': 'max'
+        'normtype': 'max', 
+        'maxnorm': 3 #just choosing some normalization for now
     }
 
-    f = h5py.File('/storage0/eo821/KS/L22/M128_N256_tmax10000_deltat0.05L22.mat','r')
-    U = np.array(f.get('uu'))[:, ks_data['N_trans']: ks_data['N_data']:ks_data['downsample']] # For converting to a NumPy array
-    print(f"Matlab solution shape {U.shape}")
-    U = einops.rearrange(U, 'x time-> time 1 x') #time channels space
-    print(f"Shape of solution for CAE{U.shape}") 
+    U_train = load_U_from_dat("../data/datasets/training_u.dat")
+    U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
+    U_test =  load_U_from_dat("../data/datasets/test_u.dat")
+    U_train = U_train/ks_data['maxnorm']
+    U_valid = U_valid/ks_data['maxnorm']
+    U_test = U_test/ks_data['maxnorm']
 
-    time_array = np.array(f.get('t'))[:, ks_data['N_trans']::ks_data['downsample']]
-    print(f"Shape of time array {time_array.shape}")
-    U_normalized, maxnorm = normalize_data(U, normtype=ks_data['normtype'])
-    del U
-    U_train_series, U_valid_series, U_test_series = train_valid_test_split(U_normalized, ks_data)
+    print(f"Points in Training/Validation/Test: {len(U_train), len(U_valid), len(U_test)}")
 
     save_config(modelpath/"kolmogorov.json", ks_data)
     save_config(modelpath/"wandb_config.json", dict(wand.config))
@@ -80,9 +73,9 @@ def train():
         model.parameters(), lr=wandb.config.learning_rate)
 
     train_loader = torch.utils.data.DataLoader(
-        torch.from_numpy(U_train_series).float(), batch_size=batchsize)
+        torch.from_numpy(U_train).float(), batch_size=batchsize)
     valid_loader = torch.utils.data.DataLoader(
-        torch.from_numpy(U_valid_series).float(), batch_size=batchsize)
+        torch.from_numpy(U_valid).float(), batch_size=batchsize)
 
     # Define the number of epochs and the gamma parameter for the scheduler
     epochs = wandb.config.epochs
@@ -152,7 +145,7 @@ if __name__ == '__main__':
         'parameters': {
 
             'latent_size': {
-                'values': [16]
+                'values': [8, 12, 16, 24, 48, 64, 96]
             },
             "batch_size": {
                 'values': [512]
@@ -161,10 +154,10 @@ if __name__ == '__main__':
                 'values': [0.001]
             },
             "epochs": {
-                'values': [5]
+                'values': [5000]
             },
             "patience": {
-                'values': [500]
+                'values': [250]
             },
             "weight_init_name": {
                 'values': ["xavier_normal"]
@@ -173,4 +166,4 @@ if __name__ == '__main__':
     }
 
     sweep_id = wandb.sweep(sweep_config, project="lantentRL-cae-ks")
-    wandb.agent(sweep_id, function=train, count=1)
+    wandb.agent(sweep_id, function=train, count=7)
