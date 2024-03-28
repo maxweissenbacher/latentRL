@@ -56,7 +56,7 @@ def train():
 
     print(f"Points in Training/Validation/Test: {len(U_train), len(U_valid), len(U_test)}")
 
-    save_config(modelpath/"kolmogorov.json", ks_data)
+    save_config(modelpath/"ks.json", ks_data)
     save_config(modelpath/"wandb_config.json", dict(wand.config))
 
     print(f'Latent size {wandb.config.latent_size}')
@@ -154,7 +154,7 @@ if __name__ == '__main__':
                 'values': [0.001]
             },
             "epochs": {
-                'values': [5000]
+                'values': [5]
             },
             "patience": {
                 'values': [250]
