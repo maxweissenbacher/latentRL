@@ -1,12 +1,3 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-
-"""
-This script reproduces the Proximal Policy Optimization (PPO) Algorithm
-results from Schulman et al. 2017 for the on MuJoCo Environments.
-"""
 import os
 import sys
 import time
@@ -24,7 +15,6 @@ from utils_ppo import make_ppo_models
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 # from utils.save_model import save_model
 import wandb
-import shutil
 import hydra
 
 
@@ -82,17 +72,6 @@ def main(cfg: "DictConfig"):
         critic_coef=cfg.loss.critic_coef,
         normalize_advantage=False,
     )
-    """
-    loss_module.set_keys(  # We have to tell the loss where to find the keys
-        reward=test_env.reward_key,
-        action=test_env.action_key,
-        #sample_log_prob=("agents", "sample_log_prob"),
-        #value=("agents", "state_value"),
-        # These last 2 keys will be expanded to match the reward shape
-        #done=("agents", "done"),
-        #terminated=("agents", "terminated"),
-    )
-    """
 
     adv_module = GAE(
         gamma=cfg.loss.gamma,
@@ -146,22 +125,6 @@ def main(cfg: "DictConfig"):
         frames_in_batch = data.numel()
         collected_frames += frames_in_batch * frame_skip
         pbar.update(data.numel())
-
-        """
-        # Adjust shapes of done and terminated keys for advantage estimator
-        data.set(
-            ("next", "done"),
-            data.get(("next", "done"))
-            .unsqueeze(-1)
-            .expand(data.get_item_shape(("next", test_env.reward_key))),
-        )
-        data.set(
-            ("next", "terminated"),
-            data.get(("next", "terminated"))
-            .unsqueeze(-1)
-            .expand(data.get_item_shape(("next", test_env.reward_key))),
-        )
-        """
 
         training_start = time.time()
         for j in range(cfg_loss_ppo_epochs):
