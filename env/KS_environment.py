@@ -35,7 +35,7 @@ class KSenv(EnvBase):
             device="cpu"):
         # Specify simulation parameters
         self.nu = nu
-        self.N = 64
+        self.N = 256
         self.dt = 0.005
         self.action_size = actuator_locs.size()[-1]
         self.actuator_locs = actuator_locs

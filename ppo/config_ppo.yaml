@@ -1,8 +1,8 @@
 # environment and task
 env:
-  nu: 0.05
+  nu: 0.01
   num_actuators: 5
-  num_sensors: 64
+  num_sensors: 256
   actuator_scale: 0.1
   burnin: 0
   target:
@@ -15,7 +15,6 @@ env:
 
 # collector
 collector:
-  frame_skip: 1
   frames_per_batch: 600 # this is the actual number of frames we see in a batch
   max_episode_length: 1_000  # Timesteps (disregarding frame skip)
   total_frames: 500_000  # Timesteps (disregarding frame skip)
@@ -24,12 +23,11 @@ collector:
 # logger
 logger:
   backend: wandb
-  mode: offline
+  mode: online
   eval_iter: 10  # Evaluate every x batches
-  num_test_episodes: 2
   test_episode_length: 1_000
-  project_name: Wind-PPO
-  team_name: windrl
+  project_name: LatentRL
+  team_name: why_are_all_the_good_names_taken_aaa
 
 # Optim
 optim:

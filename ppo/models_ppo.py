@@ -5,34 +5,16 @@
 
 import torch.nn
 import torch.optim
-
 from tensordict.nn import AddStateIndependentNormalScale, TensorDictModule
 from tensordict.nn.distributions import NormalParamExtractor
 from torchrl.data import CompositeSpec
-from torchrl.envs import (
-    ClipTransform,
-    DoubleToFloat,
-    ExplorationType,
-    RewardSum,
-    StepCounter,
-    InitTracker,
-    FiniteTensorDictCheck,
-    TransformedEnv,
-    VecNorm,
-    ParallelEnv,
-    Compose,
-    ObservationNorm,
-    EnvCreator,
-)
+from torchrl.envs import ExplorationType
 from torchrl.modules import MLP, ProbabilisticActor, TanhNormal, ValueOperator
-from torchrl.modules.models.multiagent import MultiAgentMLP
 
 
 # ====================================================================
 # Model utils
 # --------------------------------------------------------------------
-
-
 def make_ppo_models(observation_spec, action_spec):
 
     # Define input shape

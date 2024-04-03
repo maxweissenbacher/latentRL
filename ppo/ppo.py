@@ -11,7 +11,7 @@ from torchrl.envs import ExplorationType, set_exploration_type
 from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from torchrl.objectives.value.advantages import GAE
 from torchrl.record.loggers import generate_exp_name, get_logger
-from utils_ppo import make_ppo_models
+from models_ppo import make_ppo_models
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 # from utils.save_model import save_model
 import wandb
@@ -26,7 +26,7 @@ def main(cfg: "DictConfig"):
     print(f'cuda version:{torch.version.cuda}')
 
     # Correct for frame_skip
-    frame_skip = cfg.collector.frame_skip
+    frame_skip = cfg.env.frame_skip
     total_frames = cfg.collector.total_frames // frame_skip
     frames_per_batch = cfg.collector.frames_per_batch // frame_skip
     max_episode_length = cfg.collector.max_episode_length // frame_skip
@@ -105,7 +105,7 @@ def main(cfg: "DictConfig"):
         (total_frames // frames_per_batch)
         * cfg.loss.ppo_epochs
         * num_mini_batches
-        )
+    )
 
     sampling_start = time.time()
 
@@ -115,8 +115,6 @@ def main(cfg: "DictConfig"):
     cfg_optim_lr = cfg.optim.lr
     cfg_loss_anneal_clip_eps = cfg.loss.anneal_clip_epsilon
     cfg_loss_clip_epsilon = cfg.loss.clip_epsilon
-    cfg_logger_num_test_episodes = cfg.logger.num_test_episodes
-    cfg_logger_test_episode_length = cfg.logger.test_episode_length
     losses = TensorDict({}, batch_size=[cfg_loss_ppo_epochs, num_mini_batches])
 
     for i, data in enumerate(collector):
