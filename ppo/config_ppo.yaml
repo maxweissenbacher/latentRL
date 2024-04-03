@@ -1,34 +1,31 @@
 # environment and task
 env:
   nu: 0.05
-  num_actuators: 9
-  num_sensors: 10
-  actuator_scale: 0.3
+  num_actuators: 5
+  num_sensors: 64
+  actuator_scale: 0.1
   burnin: 0
   target:
   exp_name: KS
-  max_episode_steps_train: 10_000
-  max_episode_steps_eval: 10_000
-  frame_skip: 20  # Sticky actions
+  frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
   autoreg_action: 0.0  # Autoregressive action hyperparameter
   seed: 2253461632  # keep fixed for now
   auto_generate_seed: True  # If True, generate a random seed. If False, use the seed value specified above.
 
-
 # collector
 collector:
-  frame_skip: 1  # Env takes 50 time steps per update
-  frames_per_batch: 200 # this is the actual number of frames we see in a batch
+  frame_skip: 1
+  frames_per_batch: 600 # this is the actual number of frames we see in a batch
   max_episode_length: 1_000  # Timesteps (disregarding frame skip)
-  total_frames: 50_000  # Timesteps (disregarding frame skip)
+  total_frames: 500_000  # Timesteps (disregarding frame skip)
   device: cpu
 
 # logger
 logger:
   backend: wandb
-  mode: online
-  test_interval: 5_000
+  mode: offline
+  eval_iter: 10  # Evaluate every x batches
   num_test_episodes: 2
   test_episode_length: 1_000
   project_name: Wind-PPO

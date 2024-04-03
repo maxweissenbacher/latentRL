@@ -44,7 +44,7 @@ def main(cfg: "DictConfig"):
 
     # Create environments
     train_env = make_parallel_ks_env(cfg)
-    test_env = make_ks_eval_env(cfg)
+    eval_env = make_ks_eval_env(cfg)
 
     # Create models
     actor, critic = make_ppo_models(
@@ -72,11 +72,6 @@ def main(cfg: "DictConfig"):
         batch_size=mini_batch_size,
     )
 
-    # Create replay buffer to remember entire history
-    full_buffer = TensorDictReplayBuffer(
-        storage=LazyMemmapStorage(total_frames),
-    )
-
     # Create loss and adv modules
     loss_module = ClipPPOLoss(
         actor=actor,
@@ -87,6 +82,7 @@ def main(cfg: "DictConfig"):
         critic_coef=cfg.loss.critic_coef,
         normalize_advantage=False,
     )
+    """
     loss_module.set_keys(  # We have to tell the loss where to find the keys
         reward=test_env.reward_key,
         action=test_env.action_key,
@@ -96,16 +92,13 @@ def main(cfg: "DictConfig"):
         #done=("agents", "done"),
         #terminated=("agents", "terminated"),
     )
+    """
 
     adv_module = GAE(
         gamma=cfg.loss.gamma,
         lmbda=cfg.loss.gae_lambda,
         value_network=critic,
         average_gae=False,
-    )
-    adv_module.set_keys(
-        #value=("agents", "state_value"),
-        reward=test_env.reward_key,
     )
 
     # Create optimizers
@@ -126,7 +119,6 @@ def main(cfg: "DictConfig"):
     # Main loop
     collected_frames = 0
     num_network_updates = 0
-    test_number = 0
     start_time = time.time()
     pbar = tqdm.tqdm(total=total_frames)
     num_mini_batches = frames_per_batch // mini_batch_size
@@ -181,7 +173,6 @@ def main(cfg: "DictConfig"):
 
             # Update the data buffers
             data_buffer.extend(data_reshape)
-            full_buffer.extend(data_reshape)
 
             for k, batch in enumerate(data_buffer):
 
@@ -234,14 +225,13 @@ def main(cfg: "DictConfig"):
             }
         )
 
-        """
         # Evaluation
-        if abs(collected_frames % eval_iter) < frames_per_batch:
+        if i % cfg.logger.eval_iter == 0:
             with set_exploration_type(ExplorationType.MODE), torch.no_grad():
                 eval_start = time.time()
                 eval_rollout = eval_env.rollout(
-                    eval_rollout_steps,
-                    model[0],
+                    cfg.logger.test_episode_length,
+                    actor,
                     auto_cast_to_device=True,
                     break_when_any_done=True,
                 )
@@ -256,21 +246,19 @@ def main(cfg: "DictConfig"):
                 mean_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).mean(-1).mean().item()
                 std_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).std(-1).mean().item()
 
-                metrics_to_log["eval/reward"] = eval_reward
-                metrics_to_log["eval/reward_solution"] = eval_reward_u
-                metrics_to_log["eval/last_reward"] = last_reward
-                metrics_to_log["eval/last_reward_solution"] = last_reward_u
-                metrics_to_log["eval/mean_actuation"] = mean_actuation
-                metrics_to_log["eval/std_actuation"] = std_actuation
-                metrics_to_log["eval/time"] = eval_time
-        """
+            log_info.update(
+                {
+                    "eval/reward": eval_reward,
+                    "eval/last_reward": last_reward,
+                    "eval/mean_actuation": mean_actuation,
+                    "eval/std_actuation": std_actuation,
+                    "eval/time": eval_time,
+                }
+            )
 
         # Checkpoint the model and replay buffer
         if (i % 10 == 0 and i > 0) or i == total_frames // frames_per_batch:
             output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
-            # Checkpoint the full history of the training
-            full_buffer.dumps(output_dir + '/replay_buffer_checkpoint')
-            # print(f"Checkpointed replay buffer. (Saved at {output_dir + '/replay_buffer_checkpoint'}).")
             # Checkpoint the model and transforms
             # save_model(train_env, actor, critic, output_dir, i)
 
