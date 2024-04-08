@@ -193,7 +193,9 @@ def main(cfg: "DictConfig"):
         )
         # Log accuracy of CAE
         if cfg.env.path_to_cae_model:
-            cae_rel_error = np.linalg.norm(data["cae_output"] - data["u"]) / np.linalg.norm(data["u"])
+            cae_output = data["cae_output"].detach().cpu().numpy()
+            u = data["u"].detach().cpu().numpy()
+            cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
             log_info.update(
                 {
                     "train/cae_relative_L2_error": cae_rel_error,
@@ -228,8 +230,9 @@ def main(cfg: "DictConfig"):
                     rollout_episode_length = cfg.logger.test_episode_length
                 # Compute CAE accuracy during evaluation rollout
                 if cfg.env.path_to_cae_model:
-                    cae_rel_error = np.linalg.norm(eval_rollout["cae_output"] - eval_rollout["u"])
-                    cae_rel_error /= np.linalg.norm(eval_rollout["u"])
+                    cae_output = eval_rollout["cae_output"].detach().cpu().numpy()
+                    u = eval_rollout["u"].detach().cpu().numpy()
+                    cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
 
             log_info.update(
                 {

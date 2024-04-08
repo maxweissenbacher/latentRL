@@ -9,7 +9,7 @@ from autoencoder.utils.preprocessing import load_U_from_dat
 from autoencoder.convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 folderpath = Path("../models/cae")
 
 
