@@ -8,7 +8,7 @@ env:
   burnin: 0
   target:
   exp_name: KS
-  path_to_cae_model: ../models/super-sweep-2  # if empty or None, no trained autoencoder will be used
+  path_to_cae_model: models/super-sweep-2  # if empty or None, no trained autoencoder will be used
   frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
   autoreg_action: 0.0  # Autoregressive action hyperparameter

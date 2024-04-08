@@ -1,4 +1,7 @@
-from ppo.ppo import main
+from ppo.training import main
+from hydra import compose, initialize
 
 if __name__ == '__main__':
-    main()
+    initialize(config_path="./ppo/", job_name="test_app", version_base="1.2")
+    cfg = compose(config_name="config_ppo")
+    main(cfg)

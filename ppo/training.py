@@ -11,7 +11,7 @@ from torchrl.envs import ExplorationType, set_exploration_type
 from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from torchrl.objectives.value.advantages import GAE
 from torchrl.record.loggers import generate_exp_name
-from models_ppo import make_ppo_models
+from ppo.models_ppo import make_ppo_models
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 # from utils.save_model import save_model
 import wandb
@@ -19,7 +19,7 @@ import hydra
 import numpy as np
 
 
-@hydra.main(config_path="./", config_name="config_ppo", version_base="1.2")
+#@hydra.main(config_path="./", config_name="config_ppo", version_base="1.2")
 def main(cfg: "DictConfig"):
     sys.path.append(os.getcwd())
     device = "cpu" if not torch.cuda.device_count() else "cuda"
