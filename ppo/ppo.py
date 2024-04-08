@@ -10,7 +10,7 @@ from torchrl.data.replay_buffers.samplers import SamplerWithoutReplacement
 from torchrl.envs import ExplorationType, set_exploration_type
 from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from torchrl.objectives.value.advantages import GAE
-from torchrl.record.loggers import generate_exp_name, get_logger
+from torchrl.record.loggers import generate_exp_name
 from models_ppo import make_ppo_models
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 # from utils.save_model import save_model
@@ -23,7 +23,8 @@ def main(cfg: "DictConfig"):
     sys.path.append(os.getcwd())
     device = "cpu" if not torch.cuda.device_count() else "cuda"
     print(f'Running on {device}')
-    print(f'cuda version:{torch.version.cuda}')
+    if device != "cpu":
+        print(f'Cuda version: {torch.version.cuda}')
 
     # Correct for frame_skip
     frame_skip = cfg.env.frame_skip
@@ -40,6 +41,7 @@ def main(cfg: "DictConfig"):
     actor, critic = make_ppo_models(
         observation_spec=train_env.observation_spec,
         action_spec=train_env.action_spec,
+        path_to_model=cfg.env.path_to_cae_model,
     )
     actor, critic = actor.to(device), critic.to(device)
 
@@ -81,11 +83,13 @@ def main(cfg: "DictConfig"):
     )
 
     # Create optimizers
-    actor_optim = torch.optim.Adam(actor.parameters(), lr=cfg.optim.lr, eps=1e-5)
-    critic_optim = torch.optim.Adam(critic.parameters(), lr=cfg.optim.lr, eps=1e-5)
+    trainable_actor_params = filter(lambda p: p.requires_grad, actor.parameters())
+    actor_optim = torch.optim.Adam(trainable_actor_params, lr=cfg.optim.lr, eps=1e-5)
+    trainable_critic_params = filter(lambda p: p.requires_grad, critic.parameters())
+    critic_optim = torch.optim.Adam(trainable_critic_params, lr=cfg.optim.lr, eps=1e-5)
 
     # Create logger
-    exp_name = generate_exp_name("PPO_", cfg.env.exp_name)
+    exp_name = generate_exp_name("PPO", cfg.env.exp_name)
     if cfg.logger.project_name is None:
         raise ValueError("WandB project name must be specified in config.")
     wandb.init(
@@ -93,6 +97,7 @@ def main(cfg: "DictConfig"):
         project=str(cfg.logger.project_name),
         entity=str(cfg.logger.team_name),
         name=exp_name,
+        config=dict(cfg),
     )
 
     # Main loop
@@ -206,6 +211,12 @@ def main(cfg: "DictConfig"):
                 # Compute mean and std of actuation
                 mean_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).mean(-1).mean().item()
                 std_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).std(-1).mean().item()
+                # Compute length of rollout
+                terminated = eval_rollout["terminated"].nonzero()
+                if terminated.nelement() > 0:
+                    rollout_episode_length = terminated[0][0].item()
+                else:
+                    rollout_episode_length = cfg.logger.test_episode_length
 
             log_info.update(
                 {
@@ -214,6 +225,7 @@ def main(cfg: "DictConfig"):
                     "eval/mean_actuation": mean_actuation,
                     "eval/std_actuation": std_actuation,
                     "eval/time": eval_time,
+                    "eval/episode_length": rollout_episode_length,
                 }
             )
 

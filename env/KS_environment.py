@@ -36,7 +36,7 @@ class KSenv(EnvBase):
         # Specify simulation parameters
         self.nu = nu
         self.N = 256
-        self.dt = 0.005
+        self.dt = 0.05
         self.action_size = actuator_locs.size()[-1]
         self.actuator_locs = actuator_locs
         self.actuator_scale = actuator_scale
@@ -94,8 +94,10 @@ class KSenv(EnvBase):
         # To allow for batched computations, use this instead:
         # ... however the KS solver needs to be compatible with torch.vmap!
         # u = torch.vmap(self.solver_step)(u, action)
-        done = u.abs().max() > self.termination_threshold
-        done = done.view(*tensordict.shape, 1)
+        terminated = u.abs().max() > self.termination_threshold
+        terminated = terminated.view(*tensordict.shape, 1)
+        done = torch.zeros_like(terminated, dtype=torch.bool)
+
         out = TensorDict(
             {
                 "u": u,
@@ -103,6 +105,7 @@ class KSenv(EnvBase):
                 "prev_action": prev_action,
                 "reward": reward_mean,
                 "done": done,
+                "terminated": terminated,
             },
             tensordict.shape,
         )

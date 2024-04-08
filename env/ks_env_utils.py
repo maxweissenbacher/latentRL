@@ -1,9 +1,6 @@
 import torch.nn
 import torch.optim
 import numpy as np
-from tensordict.nn import AddStateIndependentNormalScale, TensorDictModule
-from tensordict.nn.distributions import NormalParamExtractor
-from torchrl.data import CompositeSpec
 from torchrl.envs import (
     ClipTransform,
     DoubleToFloat,
@@ -34,7 +31,9 @@ def add_env_transforms(env, obs_norm_params=None):
         FiniteTensorDictCheck(),
     ]
     if obs_norm_params is None:
-        transform_list.append(VecNorm(in_keys=[("agents", "observation")], decay=0.99))
+        # TO-DO: check if the VecNorm is actually beneficial or not!
+        # Previously the key was wrong so effectively no normalisation happened...
+        transform_list.append(VecNorm(in_keys=["observation"], decay=0.99))
     else:
         for in_key, loc_scale_dict in obs_norm_params.items():
             transform_list.append(
@@ -94,7 +93,7 @@ def make_ks_env(cfg, add_transforms=True):
 
 def make_parallel_ks_env(cfg):
     make_env_fn = EnvCreator(lambda: make_ks_env(cfg))
-    env = ParallelEnv(3, make_env_fn)
+    env = ParallelEnv(cfg.env.num_envs, make_env_fn)
     return env
 
 

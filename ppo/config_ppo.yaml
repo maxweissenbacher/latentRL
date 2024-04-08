@@ -1,12 +1,14 @@
 # environment and task
 env:
-  nu: 0.01
+  nu: 0.05
   num_actuators: 5
   num_sensors: 256
   actuator_scale: 0.1
+  num_envs: 3  # Number of parallel training envs
   burnin: 0
   target:
   exp_name: KS
+  path_to_cae_model: ../models/super-sweep-2  # if empty or None, no trained autoencoder will be used
   frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
   autoreg_action: 0.0  # Autoregressive action hyperparameter
@@ -17,7 +19,7 @@ env:
 collector:
   frames_per_batch: 600 # this is the actual number of frames we see in a batch
   max_episode_length: 1_000  # Timesteps (disregarding frame skip)
-  total_frames: 500_000  # Timesteps (disregarding frame skip)
+  total_frames: 1_500_000  # Timesteps (disregarding frame skip)
   device: cpu
 
 # logger

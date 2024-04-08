@@ -1,20 +1,12 @@
-import torchinfo
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
-import torch.nn as nn
-import wandb
-import h5py
-import einops
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pathlib import Path
-import time
 import warnings
-from utils.config_tools import load_config
-from utils.losses import LossTracker
-from utils.earlystopping import EarlyStopper
-from utils.preprocessing import load_U_from_dat
-from convolutional_autoencoder import CAE
+from autoencoder.utils.config_tools import load_config
+from autoencoder.utils.preprocessing import load_U_from_dat
+from autoencoder.convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
@@ -23,8 +15,6 @@ folderpath = Path("../models/cae")
 
 def load_ks_data(modelpath):
     ks_data = load_config(modelpath/"ks.json")
-
-
     U_train = load_U_from_dat("../data/datasets/training_u.dat")
     U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
     U_test =  load_U_from_dat("../data/datasets/test_u.dat")
@@ -37,7 +27,6 @@ def load_ks_data(modelpath):
  
 
 def load_cae_model(modelpath):
-
     cae_config = load_config(modelpath/"wandb_config.json")
     model = CAE(cae_config["latent_size"],
                 weight_init_name=cae_config["weight_init_name"]).to(device)
@@ -47,8 +36,8 @@ def load_cae_model(modelpath):
 
 if __name__ == '__main__':
 
-    modelpath=Path("../models/cae/super-sweep-2")
-    U_train, U_valid, U_test = load_ks_data(modelpath)
+    modelpath=Path("../models/super-sweep-2")
+    # U_train, U_valid, U_test = load_ks_data(modelpath)
     cae_model=load_cae_model(modelpath)
 
     test_snapshot = torch.from_numpy(U_test).float()
