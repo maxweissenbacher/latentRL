@@ -16,6 +16,7 @@ from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 # from utils.save_model import save_model
 import wandb
 import hydra
+import numpy as np
 
 
 @hydra.main(config_path="./", config_name="config_ppo", version_base="1.2")
@@ -190,6 +191,14 @@ def main(cfg: "DictConfig"):
                 else cfg_loss_clip_epsilon,
             }
         )
+        # Log accuracy of CAE
+        if cfg.env.path_to_cae_model:
+            cae_rel_error = np.linalg.norm(data["cae_output"] - data["u"]) / np.linalg.norm(data["u"])
+            log_info.update(
+                {
+                    "train/cae_relative_L2_error": cae_rel_error,
+                }
+            )
 
         # Evaluation
         if i % cfg.logger.eval_iter == 0:
@@ -217,6 +226,10 @@ def main(cfg: "DictConfig"):
                     rollout_episode_length = terminated[0][0].item()
                 else:
                     rollout_episode_length = cfg.logger.test_episode_length
+                # Compute CAE accuracy during evaluation rollout
+                if cfg.env.path_to_cae_model:
+                    cae_rel_error = np.linalg.norm(eval_rollout["cae_output"] - eval_rollout["u"])
+                    cae_rel_error /= np.linalg.norm(eval_rollout["u"])
 
             log_info.update(
                 {
@@ -228,6 +241,12 @@ def main(cfg: "DictConfig"):
                     "eval/episode_length": rollout_episode_length,
                 }
             )
+            if cfg.env.path_to_cae_model:
+                log_info.update(
+                    {
+                        "eval/cae_relative_L2_error": cae_rel_error,
+                    }
+                )
 
         # Checkpoint the model and replay buffer
         if (i % 10 == 0 and i > 0) or i == total_frames // frames_per_batch:

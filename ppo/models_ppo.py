@@ -6,7 +6,7 @@
 import torch.nn
 import numpy as np
 import torch.optim
-from tensordict.nn import AddStateIndependentNormalScale, TensorDictModule
+from tensordict.nn import AddStateIndependentNormalScale, TensorDictModule, TensorDictSequential
 from tensordict.nn.distributions import NormalParamExtractor
 from torchrl.data import CompositeSpec
 from torchrl.envs import ExplorationType
@@ -25,24 +25,10 @@ class CAEWrapper(torch.nn.Module):
         observation_size = x.shape[-1]
         x = x.view(int(np.prod(batch_size)), 1, observation_size)
         x = self.cae(x)
+        if isinstance(x, tuple):
+            x = x[1]
         x = x.view(*batch_size, x.shape[-1])
         return x
-
-
-class Reshaper(torch.nn.Module):
-    def __init__(self, undo=False):
-        super().__init__()
-        self.undo = undo
-
-    def forward(self, x):
-        batch_size = x.shape[:-1]
-        observation_size = x.shape[-1]
-        if not self.undo:
-            y = x.view(np.prod(batch_size), 1, observation_size)
-        else:
-            y = x.view()
-
-        return y
 
 
 # ====================================================================
@@ -52,19 +38,21 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
     # Define input shape
     observation_size = observation_spec["observation"].shape[-1]
     mlp_input_size = observation_size
-    batch_size = observation_spec["observation"].shape[:-1]
 
     if path_to_model:
         # Load trained CAE model
         modelpath = Path(path_to_model)
         cae = load_cae_model(modelpath)
-        cae = cae.encoder
+        encoder = cae.encoder
         cae = CAEWrapper(cae)
+        encoder = CAEWrapper(encoder)
         # Freeze parameters
+        for param in encoder.parameters():
+            param.requires_grad = False
         for param in cae.parameters():
             param.requires_grad = False
         # Set correct input size for MLP
-        mlp_input_size = cae.cae.enc_linear_dense.out_features
+        mlp_input_size = encoder.cae.enc_linear_dense.out_features
         # Initialise a reshaper to handle reshaping of inputs for CAE
 
         print("Using CAE")
@@ -94,7 +82,7 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
 
     policy_list = []
     if path_to_model:
-        policy_list.append(cae)
+        policy_list.append(encoder)
     policy_list.append(policy_mlp)
     policy_list.append(
         AddStateIndependentNormalScale(action_spec.shape[-1], scale_lb=1e-8)
@@ -103,13 +91,21 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
     # Add state-independent normal scale
     policy_mlp = torch.nn.Sequential(*policy_list)
 
+    policy_module = TensorDictModule(
+        module=policy_mlp,
+        in_keys=["observation"],
+        out_keys=["loc", "scale"],
+    )
+
+    cae_module = TensorDictModule(
+        module=cae,
+        in_keys=["observation"],
+        out_keys=["cae_output"]
+    )
+
     # Add probabilistic sampling of the actions
     policy_module = ProbabilisticActor(
-        TensorDictModule(
-            module=policy_mlp,
-            in_keys=["observation"],
-            out_keys=["loc", "scale"],
-        ),
+        TensorDictSequential(policy_module, cae_module),
         in_keys=["loc", "scale"],
         spec=CompositeSpec(action=action_spec),
         distribution_class=distribution_class,
@@ -134,7 +130,7 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
 
     value_list = []
     if path_to_model:
-        value_list.append(cae)
+        value_list.append(encoder)
     value_list.append(value_mlp)
 
     value_mlp = torch.nn.Sequential(*value_list)
