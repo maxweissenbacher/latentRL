@@ -29,14 +29,8 @@ from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 
 # @hydra.main(version_base="1.2", config_path="", config_name="config_sac")
 def main(cfg: "DictConfig"):  # noqa: F821
-
-    LOGGING_TO_CONSOLE = False
-    LOGGING_WANDB = True
-    # torch.autograd.set_detect_anomaly(True)
-
     # Create logger
     exp_name = generate_exp_name("SAC", cfg.env.exp_name)
-    logs = {}
     if cfg.logger.project_name is None:
         raise ValueError("WandB project name must be specified in config.")
     wandb.init(
