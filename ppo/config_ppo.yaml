@@ -26,7 +26,7 @@ collector:
 logger:
   backend: wandb
   mode: online
-  eval_iter: 20  # Evaluate every x batches
+  eval_iter: 10  # Evaluate every x batches
   test_episode_length: 1_000
   project_name: LatentRL
   team_name: why_are_all_the_good_names_taken_aaa
@@ -39,7 +39,7 @@ optim:
 
 # loss
 loss:
-  gamma: 0.8
+  gamma: 0.9
   mini_batch_size: 25  # must be less than frames per batch
   ppo_epochs: 10
   gae_lambda: 0.95
