@@ -1,8 +1,13 @@
 from hydra import compose, initialize
+from ppo.training import main
+import hydra
+
+
+@hydra.main(version_base="1.2", config_path="sac/", config_name="config_sac")
+def train(cfg: "DictConfig"):
+    main(cfg)
+
 
 if __name__ == '__main__':
-    initialize(config_path="./ppo/", job_name="ppo", version_base="1.2")
-    cfg = compose(config_name="config_ppo")
-    from ppo.training import main
-    main(cfg)
+    train()
 
