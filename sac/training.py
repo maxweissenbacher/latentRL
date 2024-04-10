@@ -14,7 +14,7 @@ from tensordict import TensorDict
 from torchrl.envs.utils import ExplorationType, set_exploration_type
 import wandb
 from torchrl.record.loggers import generate_exp_name
-from agents_sac import (
+from sac.agents_sac import (
     log_metrics_offline,
     log_metrics_wandb,
     make_collector,
@@ -27,7 +27,7 @@ from utils.rng import env_seed
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
 
 
-@hydra.main(version_base="1.2", config_path="", config_name="config_sac")
+# @hydra.main(version_base="1.2", config_path="", config_name="config_sac")
 def main(cfg: "DictConfig"):  # noqa: F821
 
     LOGGING_TO_CONSOLE = False
@@ -128,9 +128,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
 
                 # Update actor
                 optimizer_actor.zero_grad()
-                # For LSTM architecture, need retain_graph=True
-                retain_graph = cfg.network.architecture == 'lstm' or cfg.network.architecture == 'buffer_lstm'
-                actor_loss.backward(retain_graph=retain_graph)
+                actor_loss.backward(retain_graph=False)
                 optimizer_actor.step()
 
                 # Update critic
@@ -197,6 +195,17 @@ def main(cfg: "DictConfig"):  # noqa: F821
                 # Compute mean and std of actuation
                 mean_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).mean(-1).mean().item()
                 std_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).std(-1).mean().item()
+                # Compute length of rollout
+                terminated = eval_rollout["terminated"].nonzero()
+                if terminated.nelement() > 0:
+                    rollout_episode_length = terminated[0][0].item()
+                else:
+                    rollout_episode_length = cfg.logger.test_episode_length
+                # Compute CAE accuracy during evaluation rollout
+                if cfg.env.path_to_cae_model:
+                    cae_output = eval_rollout["cae_output"].detach().cpu().numpy()
+                    u = eval_rollout["u"].detach().cpu().numpy()
+                    cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
 
             log_info.update(
                 {
@@ -205,8 +214,15 @@ def main(cfg: "DictConfig"):  # noqa: F821
                     "eval/mean_actuation": mean_actuation,
                     "eval/std_actuation": std_actuation,
                     "eval/time": eval_time,
+                    "eval/episode_length": rollout_episode_length,
                 }
             )
+            if cfg.env.path_to_cae_model:
+                log_info.update(
+                    {
+                        "eval/cae_relative_L2_error": cae_rel_error,
+                    }
+                )
 
         wandb.log(data=log_info, step=collected_frames)
         sampling_start = time.time()

@@ -13,24 +13,7 @@ from torchrl.envs import ExplorationType
 from torchrl.modules import MLP, ProbabilisticActor, TanhNormal, ValueOperator
 from autoencoder.visualize_cae_model import load_cae_model
 from pathlib import Path
-
-
-class CAEWrapper(torch.nn.Module):
-    def __init__(self, model, normalisation=1.):
-        super().__init__()
-        self.cae = model
-        self.normalisation_constant = normalisation
-
-    def forward(self, x):
-        batch_size = x.shape[:-1]
-        observation_size = x.shape[-1]
-        x = x.view(int(np.prod(batch_size)), 1, observation_size)
-        x = x/self.normalisation_constant
-        x = self.cae(x)
-        if isinstance(x, tuple):
-            x = x[1]
-        x = x.view(*batch_size, x.shape[-1])
-        return x
+from utils.wrappers import CAEWrapper
 
 
 # ====================================================================
@@ -44,10 +27,7 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
     if path_to_model:
         # Load trained CAE model
         modelpath = Path(path_to_model)
-        try:
-            cae = load_cae_model(modelpath)
-        except FileNotFoundError or RuntimeError:
-            raise RuntimeError(f"Model was not found at {modelpath}. Double check the model path.")
+        cae = load_cae_model(modelpath)
         encoder = cae.encoder
         cae = CAEWrapper(model=cae, normalisation=3.)
         encoder = CAEWrapper(model=encoder, normalisation=3.)
@@ -59,8 +39,6 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
             param.requires_grad = False
         # Set correct input size for MLP
         mlp_input_size = encoder.cae.enc_linear_dense.out_features
-        # Initialise a reshaper to handle reshaping of inputs for CAE
-
         print("Using CAE")
 
     # Define policy output distribution class
@@ -103,15 +81,17 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
         out_keys=["loc", "scale"],
     )
 
-    cae_module = TensorDictModule(
-        module=cae,
-        in_keys=["observation"],
-        out_keys=["cae_output"]
-    )
+    if path_to_model:
+        cae_module = TensorDictModule(
+            module=cae,
+            in_keys=["observation"],
+            out_keys=["cae_output"]
+        )
+        policy_module = TensorDictSequential(policy_module, cae_module)
 
     # Add probabilistic sampling of the actions
     policy_module = ProbabilisticActor(
-        TensorDictSequential(policy_module, cae_module),
+        policy_module,
         in_keys=["loc", "scale"],
         spec=CompositeSpec(action=action_spec),
         distribution_class=distribution_class,

@@ -6,6 +6,7 @@
 import tempfile
 from contextlib import nullcontext
 import torch
+from pathlib import Path
 import numpy as np
 from tensordict.nn import InteractionType, TensorDictModule, TensorDictSequential
 from tensordict.nn.distributions import NormalParamExtractor
@@ -18,6 +19,8 @@ from torchrl.modules import MLP, ProbabilisticActor, ValueOperator
 from torchrl.modules.distributions import TanhNormal
 from torchrl.objectives import SoftUpdate, SACLoss
 from utils.rng import env_seed
+from utils.wrappers import CAEWrapper
+from autoencoder.visualize_cae_model import load_cae_model
 import wandb
 
 
@@ -80,6 +83,7 @@ def make_replay_buffer(cfg, prefetch=3):
 # Model
 # -----
 def make_sac_agent(cfg, train_env, eval_env):
+    path_to_model = cfg.env.path_to_cae_model
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # Define Actor Network
     in_keys_actor = ["observation"]
@@ -87,6 +91,38 @@ def make_sac_agent(cfg, train_env, eval_env):
     action_spec = train_env.action_spec
     if train_env.batch_size:
         action_spec = action_spec[(0,) * len(train_env.batch_size)]
+
+    if path_to_model:
+        # Load trained CAE model
+        modelpath = Path(path_to_model)
+        cae = load_cae_model(modelpath)
+        encoder = cae.encoder
+        cae = CAEWrapper(model=cae, normalisation=3.)
+        encoder = CAEWrapper(model=encoder, normalisation=3.)
+        print(f"Using a normalisation of {cae.normalisation_constant}. CHECK that this is correct for the model used!")
+
+        # Freeze parameters
+        for param in encoder.parameters():
+            param.requires_grad = False
+        for param in cae.parameters():
+            param.requires_grad = False
+
+        # Wrap the CAE into a TensorDictModule for composition
+        encoder_module = TensorDictModule(
+            encoder,
+            in_keys=in_keys_actor,
+            out_keys=["latent_state"],
+        )
+        cae_module = TensorDictModule(
+            cae,
+            in_keys=in_keys_actor,
+            out_keys=["cae_output"],
+        )
+
+        # Redefine the input keys for the actor and value MLP
+        in_keys_actor = encoder_module.out_keys
+
+        print("Using CAE")
 
     activation = nn.ReLU
     actor_net = MLP(
@@ -108,7 +144,10 @@ def make_sac_agent(cfg, train_env, eval_env):
         out_keys=["loc", "scale"],
     )
 
-    actor_module = TensorDictSequential(actor_net, actor_extractor)
+    if path_to_model:
+        actor_module = TensorDictSequential(encoder_module, actor_net, actor_extractor, cae_module)
+    else:
+        actor_module = TensorDictSequential(actor_net, actor_extractor)
 
     actor = ProbabilisticActor(
         spec=action_spec,
@@ -133,10 +172,17 @@ def make_sac_agent(cfg, train_env, eval_env):
     qvalue_net = MLP(
         **qvalue_net_kwargs,
     )
-    critic = ValueOperator(
-        in_keys=["action"] + in_keys_actor,
-        module=qvalue_net,
-    )
+    if path_to_model:
+        qvalue_module = ValueOperator(
+            in_keys=["action"] + encoder_module.out_keys,
+            module=qvalue_net,
+        )
+        critic = TensorDictSequential(encoder_module, qvalue_module)
+    else:
+        critic = ValueOperator(
+            in_keys=["action"] + in_keys_actor,
+            module=qvalue_net,
+        )
 
     model = nn.ModuleList([actor, critic]).to(device)
 
@@ -175,14 +221,17 @@ def make_sac_optimizer(cfg, loss_module):
     critic_params = list(loss_module.qvalue_network_params.flatten_keys().values())
     actor_params = list(loss_module.actor_network_params.flatten_keys().values())
 
+    trainable_actor_params = filter(lambda p: p.requires_grad, actor_params)
+    trainable_critic_params = filter(lambda p: p.requires_grad, critic_params)
+
     optimizer_actor = optim.Adam(
-        actor_params,
+        trainable_actor_params,
         lr=cfg.optim.lr,
         weight_decay=cfg.optim.weight_decay,
         eps=cfg.optim.adam_eps,
     )
     optimizer_critic = optim.Adam(
-        critic_params,
+        trainable_critic_params,
         lr=cfg.optim.lr,
         weight_decay=cfg.optim.weight_decay,
         eps=cfg.optim.adam_eps,
