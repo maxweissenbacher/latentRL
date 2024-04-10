@@ -16,14 +16,16 @@ from pathlib import Path
 
 
 class CAEWrapper(torch.nn.Module):
-    def __init__(self, cae):
+    def __init__(self, model, normalisation=1.):
         super().__init__()
-        self.cae = cae
+        self.cae = model
+        self.normalisation_constant = normalisation
 
     def forward(self, x):
         batch_size = x.shape[:-1]
         observation_size = x.shape[-1]
         x = x.view(int(np.prod(batch_size)), 1, observation_size)
+        x = x/self.normalisation_constant
         x = self.cae(x)
         if isinstance(x, tuple):
             x = x[1]
@@ -42,10 +44,14 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
     if path_to_model:
         # Load trained CAE model
         modelpath = Path(path_to_model)
-        cae = load_cae_model(modelpath)
+        try:
+            cae = load_cae_model(modelpath)
+        except FileNotFoundError or RuntimeError:
+            raise RuntimeError(f"Model was not found at {modelpath}. Double check the model path.")
         encoder = cae.encoder
-        cae = CAEWrapper(cae)
-        encoder = CAEWrapper(encoder)
+        cae = CAEWrapper(model=cae, normalisation=3.)
+        encoder = CAEWrapper(model=encoder, normalisation=3.)
+        print(f"Using a normalisation of {cae.normalisation_constant}. CHECK that this is correct for the model used!")
         # Freeze parameters
         for param in encoder.parameters():
             param.requires_grad = False

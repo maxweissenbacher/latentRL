@@ -21,29 +21,6 @@ from utils.rng import env_seed
 import wandb
 
 
-def basic_sac_critic(cfg, in_keys=None, out_keys=None):
-    if out_keys is None:
-        out_keys = ["state_action_value"]
-    if in_keys is None:
-        in_keys = ["action", "observation"]
-
-    qvalue_net_kwargs = {
-        "num_cells": cfg.network.sac_critic_hidden_sizes,
-        "out_features": 1,
-        "activation_class": nn.ReLU,
-    }
-    qvalue_net = MLP(
-        **qvalue_net_kwargs,
-    )
-    qvalue = ValueOperator(
-        in_keys=["action"] + in_keys,
-        module=qvalue_net,
-    )
-
-    return qvalue
-
-
-
 # ====================================================================
 # Collector and replay buffer
 # ---------------------------
