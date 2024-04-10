@@ -195,7 +195,7 @@ def make_sac_agent(cfg, train_env, eval_env):
     del td
     eval_env.close()
 
-    return model, model[0]
+    return model, model[0], device
 
 
 def make_loss_module(cfg, model):

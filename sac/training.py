@@ -57,7 +57,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
     eval_env = make_ks_eval_env(cfg)
 
     # Create agent
-    model, exploration_policy = make_sac_agent(cfg, train_env, eval_env)
+    model, exploration_policy, device = make_sac_agent(cfg, train_env, eval_env)
 
     # Create SAC loss
     loss_module, target_net_updater = make_loss_module(cfg, model)
@@ -118,6 +118,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
             for j in range(num_updates):
                 # Sample from replay buffer
                 sampled_tensordict = replay_buffer.sample().clone()
+                sampled_tensordict = sampled_tensordict.to(device)
 
                 # Compute loss
                 loss_td = loss_module(sampled_tensordict)
