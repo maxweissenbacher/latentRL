@@ -252,8 +252,8 @@ def main(cfg: "DictConfig"):
                 )
 
         # Checkpoint the model and replay buffer
-        if (i % 10 == 0 and i > 0) or i == total_frames // frames_per_batch:
-            output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
+        # if (i % 10 == 0 and i > 0) or i == total_frames // frames_per_batch:
+            # output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir
             # Checkpoint the model and transforms
             # save_model(train_env, actor, critic, output_dir, i)
 
