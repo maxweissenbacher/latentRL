@@ -9,3 +9,4 @@ wandb
 einops==0.7.0
 h5py
 scipy==1.12.0
+pandas
