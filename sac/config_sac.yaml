@@ -1,10 +1,10 @@
 # environment and task
 env:
-  nu: 0.05
-  num_actuators: 5
-  num_sensors: 256
+  nu: 0.08
+  num_actuators: 9
+  num_sensors: 10
   actuator_scale: 0.1
-  num_envs: 5  # Number of parallel training envs
+  num_envs: 1  # Number of parallel training envs
   burnin: 0
   target:
   exp_name: KS
@@ -17,7 +17,7 @@ env:
 # collector
 collector:
   total_frames: 500_000
-  init_random_frames: 0
+  init_random_frames: 25_000
   frames_per_batch: 1000
   device: cpu
   reset_at_each_iter: False
@@ -32,7 +32,7 @@ replay_buffer:
 optim:
   utd_ratio: 1.0
   actuator_loss_weight: 0.0  # Weight hyperparameter of actuation size in reward function
-  gamma: 0.9
+  gamma: 0.99
   lr: 3.0e-4
   weight_decay: 0.0  # L2 regularisation | Works well for LSTM | For attention weight_decay > 0 leads to NaNs
   batch_size: 2048

@@ -151,7 +151,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
         episode_end = (
             tensordict.get(("next", "done"), None)
             if tensordict.get(("next", "done"), False).any()
-            else tensordict.get(("next", "truncated"), False)
+            else tensordict.get(("next", "terminated"), False)
         )
         episode_rewards = tensordict["next", "episode_reward"][episode_end]
 
