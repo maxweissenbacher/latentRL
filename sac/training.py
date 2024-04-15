@@ -157,6 +157,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
 
         # Logging
         if len(episode_rewards) > 0:
+            # we never call this for some reason...
             episode_length = tensordict["next", "step_count"][episode_end]
             log_info["train/reward"] = episode_rewards.mean().item() / episode_length.item()
             log_info["train/last_reward"] = tensordict["next", "reward"][episode_end].item()
