@@ -36,7 +36,7 @@ def make_collector(cfg, train_env, actor_model_explore):
         frames_per_batch=cfg.collector.frames_per_batch // cfg.env.frame_skip,
         total_frames=cfg.collector.total_frames // cfg.env.frame_skip,
         device=cfg.collector.device,
-        max_frames_per_traj=cfg.collector.max_episode_length // cfg.env.frame_skip,
+        # max_frames_per_traj=cfg.collector.max_episode_length // cfg.env.frame_skip,
     )
     collector.set_seed(env_seed(cfg))
     return collector
@@ -165,9 +165,9 @@ def make_sac_agent(cfg, train_env, eval_env):
 
     # Define Critic Network
     qvalue_net_kwargs = {
-        "num_cells": cfg.network.sac_critic_hidden_sizes,
+        "num_cells": cfg.network.critic_hidden_sizes,
         "out_features": 1,
-        "activation_class": nn.ReLU,
+        "activation_class": activation,
     }
     qvalue_net = MLP(
         **qvalue_net_kwargs,

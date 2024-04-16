@@ -23,11 +23,11 @@ from utils.rng import env_seed
 # ====================================================================
 # Environment utils
 # --------------------------------------------------------------------
-def add_env_transforms(env, obs_norm_params=None):
+def add_env_transforms(env, cfg, obs_norm_params=None):
     transform_list = [
         InitTracker(),
         RewardSum(),
-        # StepCounter(),
+        StepCounter(cfg.collector.max_episode_length // cfg.env.frame_skip),
         FiniteTensorDictCheck(),
     ]
     if obs_norm_params is None:
@@ -83,7 +83,7 @@ def make_ks_env(cfg, add_transforms=True):
 
     # Create environments
     if add_transforms:
-        train_env = add_env_transforms(KSenv(**env_params))
+        train_env = add_env_transforms(KSenv(**env_params), cfg)
     else:
         train_env = KSenv(**env_params)
     train_env.set_seed(env_seed(cfg))
@@ -127,6 +127,6 @@ def make_ks_eval_env(cfg):
         "device": cfg.collector.device,
         "target": cfg.env.target
     }
-    test_env = add_env_transforms(KSenv(**env_params))
+    test_env = add_env_transforms(KSenv(**env_params), cfg)
     test_env.eval()
     return test_env

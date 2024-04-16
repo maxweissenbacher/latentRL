@@ -159,8 +159,8 @@ def main(cfg: "DictConfig"):  # noqa: F821
         if len(episode_rewards) > 0:
             # we never call this for some reason...
             episode_length = tensordict["next", "step_count"][episode_end]
-            log_info["train/reward"] = episode_rewards.mean().item() / episode_length.item()
-            log_info["train/last_reward"] = tensordict["next", "reward"][episode_end].item()
+            log_info["train/reward"] = (episode_rewards/episode_length).mean().item()
+            log_info["train/last_reward"] = tensordict["next", "reward"][episode_end].mean().item()
             log_info["train/episode_length"] = cfg.env.frame_skip * episode_length.sum().item() / len(episode_length)
         if collected_frames >= init_random_frames:
             log_info["train/q_loss"] = losses.get("loss_qvalue").mean().item()
