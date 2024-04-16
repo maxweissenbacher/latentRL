@@ -160,7 +160,7 @@ def make_sac_agent(cfg, train_env, eval_env):
             "tanh_loc": False,  # can be omitted since this is default value
         },
         default_interaction_type=InteractionType.RANDOM,
-        return_log_prob=True,
+        return_log_prob=False,
     )
 
     # Define Critic Network
@@ -221,8 +221,8 @@ def make_sac_optimizer(cfg, loss_module):
     critic_params = list(loss_module.qvalue_network_params.flatten_keys().values())
     actor_params = list(loss_module.actor_network_params.flatten_keys().values())
 
-    trainable_actor_params = filter(lambda p: p.requires_grad, actor_params)
-    trainable_critic_params = filter(lambda p: p.requires_grad, critic_params)
+    trainable_actor_params = [p for p in actor_params if p.requires_grad]
+    trainable_critic_params = [p for p in critic_params if p.requires_grad]
 
     optimizer_actor = optim.Adam(
         trainable_actor_params,
