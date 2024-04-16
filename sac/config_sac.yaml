@@ -36,7 +36,7 @@ optim:
   gamma: 0.99
   lr: 3.0e-4
   weight_decay: 0.0  # L2 regularisation | Works well for LSTM | For attention weight_decay > 0 leads to NaNs
-  batch_size: 2048
+  batch_size: 256
   target_update_polyak: 0.995
   alpha_init: 1.0
   adam_eps: 1.0e-8
