@@ -48,7 +48,7 @@ def add_env_transforms(env, cfg, obs_norm_params=None):
     return TransformedEnv(env, transforms)
 
 
-def make_ks_env(cfg, add_transforms=True):
+def make_ks_env(cfg):
     # Set environment hyperparameters
     device = cfg.collector.device
     actuator_locs = torch.tensor(
@@ -82,10 +82,7 @@ def make_ks_env(cfg, add_transforms=True):
     }
 
     # Create environments
-    if add_transforms:
-        train_env = add_env_transforms(KSenv(**env_params), cfg)
-    else:
-        train_env = KSenv(**env_params)
+    train_env = add_env_transforms(KSenv(**env_params), cfg)
     train_env.set_seed(env_seed(cfg))
     return train_env
 
