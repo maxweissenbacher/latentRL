@@ -23,26 +23,13 @@ from utils.rng import env_seed
 # ====================================================================
 # Environment utils
 # --------------------------------------------------------------------
-def add_env_transforms(env, cfg, obs_norm_params=None):
+def add_env_transforms(env, cfg):
     transform_list = [
         InitTracker(),
         RewardSum(),
         StepCounter(cfg.collector.max_episode_length // cfg.env.frame_skip),
         FiniteTensorDictCheck(),
     ]
-    if obs_norm_params is None:
-        # TO-DO: check if the VecNorm is actually beneficial or not!
-        # Previously the key was wrong so effectively no normalisation happened...
-        transform_list.append(VecNorm(in_keys=["observation"], decay=0.99))
-    else:
-        for in_key, loc_scale_dict in obs_norm_params.items():
-            transform_list.append(
-                ObservationNorm(
-                    loc=loc_scale_dict['loc'],
-                    scale=loc_scale_dict['scale'],
-                    in_keys=[in_key]
-                )
-            )
 
     transforms = Compose(*transform_list)
     return TransformedEnv(env, transforms)
