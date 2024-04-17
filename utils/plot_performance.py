@@ -51,13 +51,14 @@ if __name__ == '__main__':
     # ---------------------------
 
     # Load metrics for attention from WandB
+    project_name = "sac_firsttest"
     df_list = {}
     df_list['SAC'] = load_runs_from_wandb_project(
-        path="why_are_all_the_good_names_taken_aaa/LatentRL",
+        path="why_are_all_the_good_names_taken_aaa/" + project_name,
         algorithm='SAC'
     )
     df_list['PPO'] = load_runs_from_wandb_project(
-        path="why_are_all_the_good_names_taken_aaa/LatentRL",
+        path="why_are_all_the_good_names_taken_aaa/" + project_name,
         algorithm='PPO'
     )
 
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     })
 
     # Plot performance as a function of time
-    algorithm = 'PPO'
+    algorithm = 'SAC'
     color1 = 'xkcd:cornflower blue'
     color2 = 'xkcd:coral'
     colors = {'CAE': color1, 'NO CAE': color2}
@@ -143,7 +144,7 @@ if __name__ == '__main__':
     )
     """
     ax.set_xlabel('Solver steps')
-    ax.set_ylabel("Energy " + r"$\displaystyle E$")
+    ax.set_ylabel("Relative " + r"$\displaystyle L^2$" + " error")
     # ax.set_ylabel('$\displaystyle L^2$ norm')
     # plt.title(f"$\displaystyle L^2$ norm of KS solution per solver timestep")
     plt.legend()
