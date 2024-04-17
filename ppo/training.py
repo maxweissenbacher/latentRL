@@ -54,7 +54,7 @@ def main(cfg: "DictConfig"):
         total_frames=total_frames,
         device=device,
         storing_device=device,
-        max_frames_per_traj=max_episode_length
+        # max_frames_per_traj=max_episode_length
     )
 
     # Create data buffer
