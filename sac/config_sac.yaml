@@ -4,7 +4,7 @@ env:
   num_actuators: 20
   num_sensors: 256
   actuator_scale: 0.1
-  num_envs: 1  # Number of parallel training envs
+  num_envs: 5  # Number of parallel training envs
   burnin: 0
   target:
   exp_name: KS
@@ -59,6 +59,7 @@ logger:
   test_episode_length: 1_000
   project_name: LatentRL
   team_name: why_are_all_the_good_names_taken_aaa
+  save_replay_buffer: False
 
 # Disable output subdirectory
 hydra:

@@ -223,6 +223,12 @@ def main(cfg: "DictConfig"):  # noqa: F821
         wandb.log(data=log_info, step=collected_frames)
         sampling_start = time.time()
 
+    # Save replay buffer
+    if cfg.logger.save_replay_buffer:
+        output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir + '/'
+        replay_buffer.dumps(output_dir + 'replay_buffer')
+        print(f"Saved replay buffer. (Saved at {output_dir + 'replay_buffer'}).")
+
     collector.shutdown()
     wandb.finish()
 
