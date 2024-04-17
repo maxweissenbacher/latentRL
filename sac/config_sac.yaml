@@ -25,7 +25,7 @@ collector:
 
 # replay buffer
 replay_buffer:
-  size: 1_000_000
+  size: ${collector.total_frames}
   prb: False # use prioritized experience replay; the original TQC paper does not prioritized replay
   scratch_dir:
 
