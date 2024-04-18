@@ -4,8 +4,8 @@ env:
   num_actuators: 20
   num_sensors: 256
   actuator_scale: 0.1
-  num_envs: 5  # Number of parallel training envs
-  burnin: 0
+  num_envs: 3  # Number of parallel training envs
+  burnin: 5000
   target:
   exp_name: KS
   path_to_cae_model:  # if empty or None, no trained autoencoder will be used
@@ -33,7 +33,7 @@ replay_buffer:
 optim:
   utd_ratio: 1.0
   actuator_loss_weight: 0.0  # Weight hyperparameter of actuation size in reward function
-  gamma: 0.99
+  gamma: 0.9
   lr: 3.0e-4
   weight_decay: 0.0  # L2 regularisation | Works well for LSTM | For attention weight_decay > 0 leads to NaNs
   batch_size: 256
