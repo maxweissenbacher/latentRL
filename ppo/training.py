@@ -65,6 +65,11 @@ def main(cfg: "DictConfig"):
         batch_size=mini_batch_size,
     )
 
+    # Create replay buffer to remember entire history
+    full_buffer = TensorDictReplayBuffer(
+        storage=LazyMemmapStorage(total_frames),
+    )
+
     # Create loss and adv modules
     loss_module = ClipPPOLoss(
         actor=actor,
@@ -140,6 +145,7 @@ def main(cfg: "DictConfig"):
 
             # Update the data buffers
             data_buffer.extend(data_reshape)
+            full_buffer.extend(data_reshape)
 
             for k, batch in enumerate(data_buffer):
 
@@ -261,6 +267,13 @@ def main(cfg: "DictConfig"):
         collector.update_policy_weights_()
         sampling_start = time.time()
 
+    # Save replay buffer
+    if cfg.logger.save_replay_buffer:
+        output_dir = hydra.core.hydra_config.HydraConfig.get().runtime.output_dir + '/'
+        full_buffer.dumps(output_dir + 'replay_buffer_PPO')
+        print(f"Saved replay buffer. (Saved at {output_dir + 'replay_buffer_PPO'}).")
+
+    collector.shutdown()
     wandb.finish()
     end_time = time.time()
     execution_time = end_time - start_time
