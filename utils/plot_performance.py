@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # ---------------------------
 
     # Load metrics for attention from WandB
-    project_name = "sac_firsttest"
+    project_name = "ppo_cae_test"
     df_list = {}
     df_list['SAC'] = load_runs_from_wandb_project(
         path="why_are_all_the_good_names_taken_aaa/" + project_name,
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     })
 
     # Plot performance as a function of time
-    algorithm = 'SAC'
+    algorithm = 'PPO'
     color1 = 'xkcd:cornflower blue'
     color2 = 'xkcd:coral'
     colors = {'CAE': color1, 'NO CAE': color2}
