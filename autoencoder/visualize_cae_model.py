@@ -17,14 +17,14 @@ from utils.preprocessing import load_U_from_dat, train_valid_test_split
 from convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
+device = "cpu"
 folderpath = Path("../models/cae")
 
 
 def load_ks_data(modelpath):
     ks_data = load_config(modelpath/"ks.json")
 
-    U = load_U_from_dat(folderpath / "u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat")
+    U = load_U_from_dat("/home/eo821/Documents/latentRL/data/data_SAC_NU0.05/u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat")
     print(np.max(U))
     # U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
     # U_test =  load_U_from_dat("../data/datasets/test_u.dat")
@@ -54,15 +54,17 @@ if __name__ == '__main__':
     encoded, test_snapshot_reconstructed = cae_model(test_snapshot.to(device)) ## this is how we get the reconstruction
     error = test_snapshot- test_snapshot_reconstructed.numpy(force=True) 
     print(f"Relative L2 error {np.linalg.norm(error)/ np.linalg.norm(test_snapshot)} ")
-
+    print(f"MSE {torch.nn.MSELoss()(test_snapshot_reconstructed[:, 0, :], test_snapshot[:, 0, :])}")
 
     fig, axs = plt.subplots(1, 3)
-    vmin = -1
-    vmax = 1
-    N_plot = 3000
-    axs[0].imshow(test_snapshot[:N_plot, 0, :], vmin=vmin, vmax=vmax)
-    axs[1].imshow(test_snapshot_reconstructed[:N_plot, 0, :].numpy(force=True), vmin=vmin, vmax=vmax)
-    im2 = axs[2].imshow(error[:N_plot, 0, :], vmin=vmin, vmax=vmax)
+    N_plot = 800
+    vmax = torch.max(torch.max(torch.abs(test_snapshot_reconstructed[:N_plot]), torch.max(torch.abs(test_snapshot[:N_plot]))))
+    vmin = -vmax
+
+    colomrmap = "RdYlBu_r"
+    axs[0].imshow(test_snapshot[:N_plot, 0, :], vmin=vmin, vmax=vmax, cmap=colomrmap)
+    axs[1].imshow(test_snapshot_reconstructed[:N_plot, 0, :].numpy(force=True), vmin=vmin, vmax=vmax,  cmap=colomrmap)
+    im2 = axs[2].imshow(error[:N_plot, 0, :], vmin=vmin, vmax=vmax,  cmap=colomrmap)
 
     axs[0].set_title("Test data")
     axs[1].set_title("CAE")
@@ -71,3 +73,4 @@ if __name__ == '__main__':
     cax = divider.append_axes('right', size='5%', pad=0.05)
     fig.colorbar(im2, cax=cax, orientation='vertical')
     fig.show()
+    fig.savefig(modelpath/"test.png")
