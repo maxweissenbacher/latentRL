@@ -49,3 +49,7 @@ loss:
   critic_coef: 0.25
   entropy_coef: 0.0
   loss_critic_type: l2
+
+# Disable output subdirectory
+hydra:
+  output_subdir: config
