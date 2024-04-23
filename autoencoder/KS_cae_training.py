@@ -12,12 +12,12 @@ import warnings
 from utils.config_tools import save_config
 from utils.losses import LossTracker
 from utils.earlystopping import EarlyStopper
-from utils.preprocessing import load_U_from_dat
+from utils.preprocessing import load_U_from_dat, train_valid_test_split
 from convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-folderpath = Path("../models/cae")
+device = torch.device("cuda:1" if torch.cuda.is_available() else "cpu")
+folderpath = Path("../data/data_SAC_NU0.05/")
 
 def train():
     global wand
@@ -29,7 +29,8 @@ def train():
         "optimizer": "adam",
         "epochs": 0,
         "patience": 200,
-        "weight_init_name": "kaiming_uniform"
+        "weight_init_name": "kaiming_uniform", 
+        "nu":0.0
     }
     # Initialize wandb with a sample project name
     wand = wandb.init(config=config_defaults)
@@ -37,22 +38,25 @@ def train():
     modelpath = folderpath / wand.name
     modelpath.mkdir(parents=True, exist_ok=True)
 
-    # Start by setting up the data - code structure to be improved @Elise
     ks_data = {
         'L': 22,
         'dt': 0.05,
         'N_x': 256,
         'batchsize': 128,
         'normtype': 'max', 
-        'maxnorm': 3 #just choosing some normalization for now
+        'maxnorm': 18,
+        'train_ratio': 0.5,
+        'valid_ratio': 0.1,
+        'N_data': 500000,
     }
-
-    U_train = load_U_from_dat("../data/datasets/training_u.dat")
-    U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
-    U_test =  load_U_from_dat("../data/datasets/test_u.dat")
-    U_train = U_train/ks_data['maxnorm']
-    U_valid = U_valid/ks_data['maxnorm']
-    U_test = U_test/ks_data['maxnorm']
+    U = load_U_from_dat(folderpath / "u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat")
+    print(np.max(U))
+    # U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
+    # U_test =  load_U_from_dat("../data/datasets/test_u.dat")
+    # U_train = U_train/ks_data['maxnorm']
+    # U_valid = U_valid/ks_data['maxnorm']
+    # U_test = U_test/ks_data['maxnorm']
+    U_train, U_valid, U_test = train_valid_test_split(U/ks_data['maxnorm'], ks_data)
 
     print(f"Points in Training/Validation/Test: {len(U_train), len(U_valid), len(U_test)}")
 
@@ -145,7 +149,7 @@ if __name__ == '__main__':
         'parameters': {
 
             'latent_size': {
-                'values': [8, 12, 16, 24, 48, 64, 96]
+                'values': [8, 12, 16, 24, 48]
             },
             "batch_size": {
                 'values': [512]
@@ -154,16 +158,19 @@ if __name__ == '__main__':
                 'values': [0.001]
             },
             "epochs": {
-                'values': [5]
+                'values': [1000]
             },
             "patience": {
-                'values': [250]
+                'values': [100]
             },
             "weight_init_name": {
                 'values': ["xavier_normal"]
+            }, 
+            "nu":{
+                'values':[0.05]
             }
         }
     }
 
     sweep_id = wandb.sweep(sweep_config, project="lantentRL-cae-ks")
-    wandb.agent(sweep_id, function=train, count=7)
+    wandb.agent(sweep_id, function=train, count=5)

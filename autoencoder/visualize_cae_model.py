@@ -13,7 +13,7 @@ import warnings
 from utils.config_tools import load_config
 from utils.losses import LossTracker
 from utils.earlystopping import EarlyStopper
-from utils.preprocessing import load_U_from_dat
+from utils.preprocessing import load_U_from_dat, train_valid_test_split
 from convolutional_autoencoder import CAE
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -24,15 +24,14 @@ folderpath = Path("../models/cae")
 def load_ks_data(modelpath):
     ks_data = load_config(modelpath/"ks.json")
 
-
-    U_train = load_U_from_dat("../data/datasets/training_u.dat")
-    U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
-    U_test =  load_U_from_dat("../data/datasets/test_u.dat")
-    U_train = U_train/ks_data['maxnorm']
-    U_valid = U_valid/ks_data['maxnorm']
-    U_test = U_test/ks_data['maxnorm']
-
-    print(f"Points in Training/Validation/Test: {len(U_train), len(U_valid), len(U_test)}")
+    U = load_U_from_dat(folderpath / "u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat")
+    print(np.max(U))
+    # U_valid = load_U_from_dat("../data/datasets/validation_u.dat")
+    # U_test =  load_U_from_dat("../data/datasets/test_u.dat")
+    # U_train = U_train/ks_data['maxnorm']
+    # U_valid = U_valid/ks_data['maxnorm']
+    # U_test = U_test/ks_data['maxnorm']
+    U_train, U_valid, U_test = train_valid_test_split(U/ks_data['maxnorm'], ks_data)
     return U_train, U_valid, U_test
  
 
@@ -47,7 +46,7 @@ def load_cae_model(modelpath):
 
 if __name__ == '__main__':
 
-    modelpath=Path("../models/cae/super-sweep-2")
+    modelpath=Path("../models/cae/dainty-sweep-2")
     U_train, U_valid, U_test = load_ks_data(modelpath)
     cae_model=load_cae_model(modelpath)
 
