@@ -1,0 +1,11 @@
+{
+    "L": 22,
+    "dt": 0.05,
+    "N_x": 256,
+    "batchsize": 128,
+    "normtype": "max",
+    "maxnorm": 18,
+    "train_ratio": 0.5,
+    "valid_ratio": 0.1,
+    "N_data": 500000
+}
