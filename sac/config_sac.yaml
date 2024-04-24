@@ -7,7 +7,7 @@ env:
   N: 256
   dt: 0.05
   num_envs: 3  # Number of parallel training envs
-  burnin: 5000
+  burnin: 10000
   target:
   exp_name: KS
   path_to_cae_model:  # if empty or None, no trained autoencoder will be used
