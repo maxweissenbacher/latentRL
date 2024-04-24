@@ -40,6 +40,7 @@ def main(cfg: "DictConfig"):
 
     # Create models
     actor, critic = make_ppo_models(
+        cfg=cfg,
         observation_spec=train_env.observation_spec,
         action_spec=train_env.action_spec,
         path_to_model=cfg.env.path_to_cae_model,

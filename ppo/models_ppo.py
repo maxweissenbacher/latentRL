@@ -19,7 +19,7 @@ from utils.wrappers import CAEWrapper
 # ====================================================================
 # Model utils
 # --------------------------------------------------------------------
-def make_ppo_models(observation_spec, action_spec, path_to_model=None):
+def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
     # Define input shape
     observation_size = observation_spec["observation"].shape[-1]
     mlp_input_size = observation_size
@@ -29,8 +29,8 @@ def make_ppo_models(observation_spec, action_spec, path_to_model=None):
         modelpath = Path(path_to_model)
         cae = load_cae_model(modelpath)
         encoder = cae.encoder
-        cae = CAEWrapper(model=cae, normalisation=3.)
-        encoder = CAEWrapper(model=encoder, normalisation=3.)
+        cae = CAEWrapper(model=cae, normalisation=cfg.env.model_scale)
+        encoder = CAEWrapper(model=encoder, normalisation=cfg.env.model_scale)
         print(f"Using a normalisation of {cae.normalisation_constant}. CHECK that this is correct for the model used!")
         # Freeze parameters
         for param in encoder.parameters():

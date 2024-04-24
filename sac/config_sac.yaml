@@ -11,6 +11,7 @@ env:
   target:
   exp_name: KS
   path_to_cae_model:  # if empty or None, no trained autoencoder will be used
+  model_scale: 1.0  # Input scale for the model - this should probs be retired soon and built into the model
   frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
   seed: 2253461632  # keep fixed for now
