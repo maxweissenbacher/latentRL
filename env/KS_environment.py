@@ -95,6 +95,7 @@ class KSenv(EnvBase):
                 action, dim=-1)
             reward_sum += reward
         reward_mean = reward_sum / self.frame_skip  # Compute the average reward over frame_skip steps
+        reward_mean = reward_mean / torch.sqrt(torch.tensor(self.N))
         reward_mean = reward_mean.view(*tensordict.shape, 1)
         prev_action = action
         observation = u[self.observation_inds]  # Evaluate at desired indices
