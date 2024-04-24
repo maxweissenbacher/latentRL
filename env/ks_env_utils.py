@@ -65,7 +65,9 @@ def make_ks_env(cfg):
         "actuator_loss_weight": 0.0,
         "actuator_scale": float(cfg.env.actuator_scale),
         "device": cfg.collector.device,
-        "target": cfg.env.target
+        "target": cfg.env.target,
+        "N": cfg.env.N,
+        "dt": cfg.env.dt,
     }
 
     # Create environments
@@ -109,7 +111,9 @@ def make_ks_eval_env(cfg):
         "actuator_loss_weight": 0.0,
         "actuator_scale": float(cfg.env.actuator_scale),
         "device": cfg.collector.device,
-        "target": cfg.env.target
+        "target": cfg.env.target,
+        "N": cfg.env.N,
+        "dt": cfg.env.dt,
     }
     test_env = add_env_transforms(KSenv(**env_params), cfg)
     test_env.eval()

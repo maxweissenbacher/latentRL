@@ -11,6 +11,8 @@ from torchrl.envs import EnvBase, Compose, DoubleToFloat, EnvCreator, ParallelEn
 from torchrl.envs.transforms import InitTracker, RewardSum, StepCounter, FiniteTensorDictCheck, ObservationNorm
 from torchrl.envs.utils import check_env_specs
 from solver.ks_solver import KS
+
+
 # from plot.plotting import contourplot_KS
 
 
@@ -32,11 +34,14 @@ class KSenv(EnvBase):
             initial_amplitude=1e-2,
             actuator_scale=0.1,
             seed=None,
-            device="cpu"):
+            device="cpu",
+            N=256,
+            dt=0.05,
+    ):
         # Specify simulation parameters
         self.nu = nu
-        self.N = 256
-        self.dt = 0.05
+        self.N = N
+        self.dt = dt
         self.action_size = actuator_locs.size()[-1]
         self.actuator_locs = actuator_locs
         self.actuator_scale = actuator_scale
@@ -80,12 +85,14 @@ class KSenv(EnvBase):
         reward_sum = torch.zeros([], device=self.device)
         for i in range(self.frame_skip):  # Take frame_skip many steps
             if self.frame_skip > 1 and self.soft_action:
-                action_interp = (i/(self.frame_skip-1))*action + ((self.frame_skip-1-i)/(self.frame_skip-1))*prev_action
+                action_interp = (i / (self.frame_skip - 1)) * action + (
+                            (self.frame_skip - 1 - i) / (self.frame_skip - 1)) * prev_action
             else:
                 action_interp = action
             u = self.solver_step(u, action_interp)  # Take a step using the PDE solver
             # reward = - (L2 norm of solution + hyperparameter * L2 norm of action)
-            reward = - torch.linalg.norm(u-self.target, dim=-1) - self.actuator_loss_weight * torch.linalg.norm(action, dim=-1)
+            reward = - torch.linalg.norm(u - self.target, dim=-1) - self.actuator_loss_weight * torch.linalg.norm(
+                action, dim=-1)
             reward_sum += reward
         reward_mean = reward_sum / self.frame_skip  # Compute the average reward over frame_skip steps
         reward_mean = reward_mean.view(*tensordict.shape, 1)
