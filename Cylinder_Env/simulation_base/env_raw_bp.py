@@ -11,11 +11,7 @@ sys.path.append(cwd + "/../")
 from Env2DCylinderModified import Env2DCylinderModified
 from probe_positions import probe_positions
 
-
 from dolfin import Expression
-from gym.wrappers.time_limit import TimeLimit
-
-from stable_baselines3.common.monitor import Monitor
 
 nb_actuations = 400 # Number of actions (NN actuations) taken per episode (Number of action intervals)
 
@@ -183,3 +179,7 @@ def resume_env(plot=False,  # To plot results (Field, controls, lift, drag, rec 
 
 
     return _init  # resume_env() returns instance of Environment object
+
+
+if __name__ == '__main__':
+    env = resume_env(plot=False, single_run=True, horizon=400, dump_vtu=100, n_env=99)
