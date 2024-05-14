@@ -11,7 +11,7 @@ def load_config(config_filename):
     Returns:
         dict: the loaded configuration data.
     """
-    with open(config_filename, 'r') as config_file:
+    with open(config_filename, "r") as config_file:
         config_data = json.load(config_file)
     return config_data
 
@@ -24,6 +24,6 @@ def save_config(config_filename, dictionary):
         config_filename (str): model+filename
         dictionary (dict): here e.g. on kolmogorov data
     """
-    with open(config_filename, 'w') as config_file:
+    with open(config_filename, "w") as config_file:
         json.dump(dictionary, config_file, indent=4)
     print(f"Config saved to {config_filename}")

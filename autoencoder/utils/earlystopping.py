@@ -36,10 +36,8 @@ class EarlyStopper:
                 print(f"--- early stopping after {self.patience} epochs ---")
                 return True
         return False
-    
 
     def reset_counter(self):
-        """Reset counter to 0
-        """
+        """Reset counter to 0"""
         self.counter = 0
         self.stop = False
