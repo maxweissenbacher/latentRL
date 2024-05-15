@@ -240,6 +240,7 @@ def main(cfg: "DictConfig"):
                     cae_output = eval_rollout["cae_output"].detach().cpu().numpy()
                     u = eval_rollout["u"].detach().cpu().numpy()
                     cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
+                    cae_abs_error = np.linalg.norm(cae_output - u)
 
             log_info.update(
                 {
@@ -255,6 +256,7 @@ def main(cfg: "DictConfig"):
                 log_info.update(
                     {
                         "eval/cae_relative_L2_error": cae_rel_error,
+                        "eval/cae_absolute_L2_error": cae_abs_error,
                     }
                 )
 
