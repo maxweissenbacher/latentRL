@@ -4,3 +4,4 @@ __pycache__/
 
 .idea
 wandb/
+Cyl_env_test_script*
