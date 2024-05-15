@@ -6,7 +6,7 @@ Environment seen by the RL agent. It is the main class of the repo.
 import sys
 import os
 cwd = os.getcwd()
-sys.path.append(cwd + "/../Simulation/")
+sys.path.append(cwd + "/Cylinder_Env/")
 
 from dolfin import Expression, File, plot
 from probes import PenetratedDragProbeANN, PenetratedLiftProbeANN, PressureProbeANN, VelocityProbeANN, RecirculationAreaProbe

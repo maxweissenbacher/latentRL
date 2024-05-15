@@ -11,6 +11,8 @@ sys.path.append(cwd + "/../")
 from Cylinder_Env.Env2DCylinderModified import Env2DCylinderModified
 from Cylinder_Env.probe_positions import probe_positions
 
+from gym.wrappers.time_limit import TimeLimit
+
 from dolfin import Expression
 
 nb_actuations = 400 # Number of actions (NN actuations) taken per episode (Number of action intervals)
