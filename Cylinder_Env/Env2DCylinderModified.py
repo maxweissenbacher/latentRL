@@ -8,6 +8,7 @@ import os
 cwd = os.getcwd()
 sys.path.append(cwd + "/Cylinder_Env/")
 
+
 from dolfin import Expression, File, plot
 from probes import PenetratedDragProbeANN, PenetratedLiftProbeANN, PressureProbeANN, VelocityProbeANN, RecirculationAreaProbe
 from generate_msh import generate_mesh
@@ -222,16 +223,20 @@ class Env2DCylinderModified(gym.Env):
                 print("Load initial flow state")
 
             # Load initial fields
-            self.flow_params['u_init'] = 'mesh/u_init.xdmf'
-            self.flow_params['p_init'] = 'mesh/p_init.xdmf'
+            self.flow_params['u_init'] = 'Cylinder_Env/mesh/u_init.xdmf'
+            self.flow_params['p_init'] = 'Cylinder_Env/mesh/p_init.xdmf'
 
             if self.verbose > 0:
                 print("Load buffer history")
 
             # Load ring buffers
-            with open('mesh/dict_history_parameters.pkl', 'rb') as f:
+            filepath = os.getcwd()+'/Cylinder_Env/mesh/dict_history_parameters.pkl'
+            """
+            with open(filepath, 'rb') as f:
                 self.history_parameters = pickle.load(f)
-
+            """
+            #self.history_parameters = {}
+                
             # Check everything is good to go
 
             if not "number_of_probes" in self.history_parameters:
@@ -318,8 +323,8 @@ class Env2DCylinderModified(gym.Env):
                 self.lift = self.lift_probe.sample(self.u_, self.p_)
                 self.recirc_area = self.area_probe.sample(self.u_, self.p_)
 
-                self.write_history_parameters()  # Add new step data to history buffers
-                self.visual_inspection()  # Create dynamic plots, show step data in command line and save it to saved_models/debug.csv
+                # self.write_history_parameters()  # Add new step data to history buffers
+                # self.visual_inspection()  # Create dynamic plots, show step data in command line and save it to saved_models/debug.csv
                 self.output_data()  # Extend arrays of episode qtys, generate vtu files for area, u and p
 
                 self.solver_step += 1
@@ -329,8 +334,8 @@ class Env2DCylinderModified(gym.Env):
             comm = mesh.mpi_comm()
 
             # save field data
-            XDMFFile(comm, 'mesh/u_init.xdmf').write_checkpoint(self.u_, 'u0', 0, encoding)
-            XDMFFile(comm, 'mesh/p_init.xdmf').write_checkpoint(self.p_, 'p0', 0, encoding)
+            XDMFFile(comm, 'Cylinder_Env/mesh/u_init.xdmf').write_checkpoint(self.u_, 'u0', 0, encoding)
+            XDMFFile(comm, 'Cylinder_Env/mesh/p_init.xdmf').write_checkpoint(self.p_, 'p0', 0, encoding)
 
             # save buffer dict
             with open('mesh/dict_history_parameters.pkl', 'wb') as f:
@@ -358,7 +363,7 @@ class Env2DCylinderModified(gym.Env):
             self.lift = self.lift_probe.sample(self.u_, self.p_)
             self.recirc_area = self.area_probe.sample(self.u_, self.p_)
 
-            self.write_history_parameters()
+            # self.write_history_parameters()
 
         # ----------------------------------------------------------------------
         # if necessary, fill the probes buffer
@@ -781,8 +786,7 @@ class Env2DCylinderModified(gym.Env):
 
 
     def __str__(self):
-        # printi("Env2DCylinder ---")
-        print('')
+        return 'Env2DCylinder'
 
     def close(self):
         self.ready_to_use = False
@@ -915,7 +919,7 @@ class Env2DCylinderModified(gym.Env):
             self.u_, self.p_ = self.flow.evolve(self.Qs)
 
             # Output flow data when relevant
-            self.visual_inspection()  # Create dynamic plots, show step data in command line and save it to saved_models/debug.csv
+            # self.visual_inspection()  # Create dynamic plots, show step data in command line and save it to saved_models/debug.csv
             self.output_data()  # Extend arrays of episode qtys, generate vtu files for area, u and p
 
             # We have done one solver step
@@ -929,7 +933,7 @@ class Env2DCylinderModified(gym.Env):
             self.recirc_area = self.area_probe.sample(self.u_, self.p_)
 
             # Write to the history buffers
-            self.write_history_parameters()
+            # self.write_history_parameters()
 
             self.accumulated_drag += self.drag
             self.accumulated_lift += self.lift

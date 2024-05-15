@@ -35,7 +35,7 @@ def resume_env(plot=False,  # To plot results (Field, controls, lift, drag, rec 
     single_output = False
     include_actions = True
 
-    root = 'mesh/turek_2d'  # Root of geometry file path
+    root = 'Cylinder_Env/mesh/turek_2d'  # Root of geometry file path
     if (not os.path.exists('mesh')):
         os.mkdir('mesh')
 

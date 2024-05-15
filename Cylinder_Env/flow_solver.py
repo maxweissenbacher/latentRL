@@ -3,6 +3,12 @@ import numpy as np
 
 import math
 
+import sys
+import os
+cwd = os.getcwd()
+sys.path.append(cwd + "/Cylinder_Env/")
+# sys.path.append(cwd + "/Cylinder_Env/mesh/")
+
 # Solves FE problem (sets BCs,
 # There are three variational problems to be defined, one for each step in the IPCS scheme
 
