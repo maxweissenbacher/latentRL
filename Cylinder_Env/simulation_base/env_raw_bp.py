@@ -8,8 +8,8 @@ import numpy as np
 cwd = os.getcwd()
 sys.path.append(cwd + "/../")
 
-from Env2DCylinderModified import Env2DCylinderModified
-from probe_positions import probe_positions
+from Cylinder_Env.Env2DCylinderModified import Env2DCylinderModified
+from Cylinder_Env.probe_positions import probe_positions
 
 from dolfin import Expression
 

@@ -1,3 +1,8 @@
+import sys
+import os
+cwd = os.getcwd()
+sys.path.append(cwd + "/../")
+
 from Cylinder_Env.simulation_base.env_raw_bp import resume_env
 from torchrl.envs.utils import check_env_specs
 
