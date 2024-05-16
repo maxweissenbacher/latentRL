@@ -2,13 +2,14 @@ import torch.nn as nn
 import torch
 from collections import OrderedDict
 import random
+from utils.loss_function import symexp
 
 random.seed(0)
 
 class TrainableEltwiseLayer(nn.Module):
     def __init__(self, input_shape):
         super(TrainableEltwiseLayer, self).__init__()
-        self.weights = nn.Parameter(self.input_shape[-2:])  # define the trainable parameter
+        self.weights = nn.Parameter(torch.Tensor(1, input_shape[-1]))  # define the trainable parameter
     def forward(self, x):
         # assuming x is of size b-n-h-w
         return x * self.weights  # element-wise multiplication
@@ -177,7 +178,8 @@ class CAE(nn.Module):
     def initialize_weights(self, weight_init_name):
         weight_init_dict = {
             "xavier_uniform": nn.init.xavier_uniform_,
-            "xavier_normal": nn.init.xavier_normal_,   # default choice of torch, corresponds to He initialization
+            "xavier_normal": nn.init.xavier_normal_,
+            # default choice of torch, corresponds to He initialization
             "kaiming_uniform": nn.init.kaiming_uniform_,
             "kaiming_normal": nn.init.kaiming_uniform_,
         }
@@ -196,3 +198,8 @@ class CAE(nn.Module):
         encoded = self.encoder(input)
         decoded = self.decoder(encoded)
         return encoded, decoded
+    
+    def symp_prediction(self, input):
+        encoded = self.encoder(input)
+        decoded = self.decoder(encoded)
+        return symexp(decoded)
