@@ -97,9 +97,8 @@ def make_sac_agent(cfg, train_env, eval_env):
         modelpath = Path(path_to_model)
         cae = load_cae_model(modelpath)
         encoder = cae.encoder
-        cae = CAEWrapper(model=cae, normalisation=cfg.env.model_scale, un_normalise=False)
-        encoder = CAEWrapper(model=encoder, normalisation=cfg.env.model_scale, un_normalise=True)
-        print(f"Using a normalisation of {cae.normalisation_constant}. CHECK that this is correct for the model used!")
+        cae = CAEWrapper(model=cae)
+        encoder = CAEWrapper(model=encoder)
 
         # Freeze parameters
         for param in encoder.parameters():
