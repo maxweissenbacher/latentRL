@@ -13,6 +13,7 @@ from torchrl.objectives.value.advantages import GAE
 from torchrl.record.loggers import generate_exp_name
 from ppo.models_ppo import make_ppo_models
 from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
+from env.cylinder_flow_env import make_parallel_cylinder_env, make_cylinder_eval_env
 # from utils.save_model import save_model
 import wandb
 import hydra
@@ -35,8 +36,14 @@ def main(cfg: "DictConfig"):
     mini_batch_size = cfg.loss.mini_batch_size // frame_skip
 
     # Create environments
-    train_env = make_parallel_ks_env(cfg)
-    eval_env = make_ks_eval_env(cfg)
+    if cfg.env_name == 'KS':
+        train_env = make_parallel_ks_env(cfg)
+        eval_env = make_ks_eval_env(cfg)
+    elif cfg.env_name == 'CYLINDER':
+        train_env = make_parallel_cylinder_env(cfg)
+        eval_env = make_cylinder_eval_env(cfg)
+    else:
+        raise RuntimeError(f"Expected cfg.env_name to be either KS or CYLINDER. Got {cfg.env_name}.")
 
     # Create models
     actor, critic = make_ppo_models(

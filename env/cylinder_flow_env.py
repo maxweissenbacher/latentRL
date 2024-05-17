@@ -1,8 +1,22 @@
 import sys
 import os
+from torchrl.envs import (
+    ClipTransform,
+    DoubleToFloat,
+    ExplorationType,
+    RewardSum,
+    StepCounter,
+    InitTracker,
+    FiniteTensorDictCheck,
+    TransformedEnv,
+    VecNorm,
+    ParallelEnv,
+    Compose,
+    ObservationNorm,
+    EnvCreator,
+)
 cwd = os.getcwd()
 sys.path.append(cwd + "/../")
-
 from Cylinder_Env.simulation_base.env_raw_bp import resume_env
 from torchrl.envs.utils import check_env_specs
 
@@ -14,10 +28,17 @@ def make_cylinder_env(device):
     env = GymWrapper(env, device=device)
     return env
 
+
 def make_parallel_cylinder_env(cfg):
-    make_env_fn = EnvCreator(lambda: make_ks_env(cfg))
+    make_env_fn = EnvCreator(lambda: make_cylinder_env(cfg.collector.device))
     env = ParallelEnv(cfg.env.num_envs, make_env_fn)
     return env
+
+
+def make_cylinder_eval_env(cfg):
+    test_env = make_cylinder_env(cfg.collector.device)
+    test_env.eval()
+    return test_env
 
 
 if __name__ == '__main__':
