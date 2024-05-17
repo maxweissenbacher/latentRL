@@ -1,0 +1,10 @@
+{
+    "L": 22,
+    "dt": 0.05,
+    "N_x": 256,
+    "batchsize": 128,
+    "train_ratio": 0.5,
+    "valid_ratio": 0.1,
+    "N_data": 500000,
+    "filename":"u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat"
+}

@@ -1,0 +1,11 @@
+{
+    "batch_size": 512,
+    "epochs": 1000,
+    "latent_size": 16,
+    "learning_rate": 0.001,
+    "nu": 0.05,
+    "patience": 100,
+    "weight_init_name": "xavier_normal",
+    "optimizer": "adam",
+    "input_normalization": null
+}
