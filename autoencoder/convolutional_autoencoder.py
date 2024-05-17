@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch
 from collections import OrderedDict
 import random
-from utils.loss_function import symexp
+from autoencoder.utils.loss_function import symexp
 
 random.seed(0)
 

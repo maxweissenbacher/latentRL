@@ -5,9 +5,9 @@ import os
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pathlib import Path
 import warnings
-from utils.config_tools import load_config
-from utils.preprocessing import load_U_from_dat, train_valid_test_split
-from convolutional_autoencoder import CAE
+from autoencoder.utils.config_tools import load_config
+from autoencoder.utils.preprocessing import load_U_from_dat, train_valid_test_split
+from autoencoder.convolutional_autoencoder import CAE
 
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
