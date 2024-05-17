@@ -99,7 +99,7 @@ def main(cfg: "DictConfig"):  # noqa: F821
 
         # Console update
         # pbar.update(tensordict.numel())
-        if collected_frames % (cfg.collector.total_frames // (cfg.env.frame_skip * num_console_updates)) == 0:
+        if collected_frames % (cfg.collector.total_frames // (cfg.env.frame_skip * num_console_updates) + 1) == 0:
             console_output = f'Frame {collected_frames}/{cfg.collector.total_frames // cfg.env.frame_skip}'
             time_passed = time.time() - train_start_time
             console_output += f' | {time_passed/60:.0f} min' if time_passed/60 > 1 else f' | <1 min'
