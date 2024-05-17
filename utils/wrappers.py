@@ -14,7 +14,7 @@ class CAEWrapper(torch.nn.Module):
         observation_size = x.shape[-1]
         x = x.view(int(np.prod(batch_size)), 1, observation_size)
         x = x/self.normalisation_constant
-        x = self.cae(x)
+        x = self.cae.symp_forward(x)
         if isinstance(x, tuple):
             x = x[1]
         x = x.view(*batch_size, x.shape[-1])
