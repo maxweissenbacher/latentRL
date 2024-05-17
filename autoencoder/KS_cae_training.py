@@ -16,7 +16,7 @@ from utils.loss_function import symlog
 # ignore a matlab warning - to be removed when we update the solution import
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 device = torch.device("cuda:2" if torch.cuda.is_available() else "cpu")
-folderpath = Path("../data/data_SAC_NU0.05/")
+folderpath = Path("../data_SAC_NU0.05/")
 
 
 def train():

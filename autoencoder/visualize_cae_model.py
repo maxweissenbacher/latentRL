@@ -19,7 +19,7 @@ def load_ks_data(modelpath):
     
     ks_data = load_config(modelpath / "ks.json")
     U = load_U_from_dat(
-        "/home/eo821/Documents/latentRL/data/data_SAC_NU0.05/u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat"
+        "../data_SAC_NU0.05/u_SAC_NU0.05_A20_NUMENVS5_BURNIN5000.dat"
     )
     print(np.max(U))
     U_train, U_valid, U_test = train_valid_test_split(U, ks_data)
@@ -37,7 +37,7 @@ def load_cae_model(modelpath):
 
 if __name__ == "__main__":
     pathdir = Path(
-        "/home/eo821/Documents/latentRL/data/data_SAC_NU0.05/symlog/"
+        "../data_SAC_NU0.05/symlog_model/"
     )
     for modelname in os.listdir(pathdir):
         print(modelname)
