@@ -29,8 +29,8 @@ def load_ks_data(modelpath):
 def load_cae_model(modelpath):
     ks_data = load_config(modelpath / "ks.json")
     cae_config = load_config(modelpath / "wandb_config.json")
-    input_shape = (cae_config['batch_size'], 1, ks_data["N_x"])
-    model = CAE(input_shape, cae_config["latent_size"], weight_init_name=cae_config["weight_init_name"]).to(device)
+    input_shape = (cae_config['batch_size'], 1, ks_data["N_x"]) #hardcoded output shape in the autoencoder...
+    model = CAE(cae_config["latent_size"], weight_init_name=cae_config["weight_init_name"]).to(device)
     model.load_state_dict(torch.load(modelpath / "best_model.pth", map_location=device))
     return model.to(device)
 
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         cae_model = load_cae_model(modelpath)
 
         test_snapshot = torch.from_numpy(U_test).float()
-        test_snapshot_reconstructed = cae_model.symp_prediction(
+        encoded, test_snapshot_reconstructed = cae_model.symp_forward(
             test_snapshot.to(device)
         )  ## this is how we get the reconstruction
         error = test_snapshot - test_snapshot_reconstructed.numpy(force=True)

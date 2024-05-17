@@ -7,9 +7,9 @@ from utils.loss_function import symexp
 random.seed(0)
 
 class TrainableEltwiseLayer(nn.Module):
-    def __init__(self, input_shape):
+    def __init__(self):
         super(TrainableEltwiseLayer, self).__init__()
-        self.weights = nn.Parameter(torch.Tensor(1, input_shape[-1]))  # define the trainable parameter
+        self.weights = nn.Parameter(torch.Tensor(1, 256))  # hardcode dimension output - this is to minimize effort in cae wrapper
     def forward(self, x):
         # assuming x is of size b-n-h-w
         return x * self.weights  # element-wise multiplication
@@ -21,7 +21,7 @@ class CAE(nn.Module):
     The encoder and decoder both use Conv1d. Only tunable parameter is the latent dimension.
     """
 
-    def __init__(self, input_shape, latent_size, weight_init_name="kaiming_uniform", random_seed=0):
+    def __init__(self, latent_size, weight_init_name="kaiming_uniform", random_seed=0):
         """
         Initialize the CAE model.
 
@@ -34,7 +34,7 @@ class CAE(nn.Module):
         """
         super(CAE, self).__init__()
         torch.manual_seed(random_seed)
-        self.input_shape = input_shape
+        # self.input_shape = input_shape
         self.latent_size = latent_size
         self.initialize_encoder()
         self.initialize_decoder()
@@ -169,7 +169,7 @@ class CAE(nn.Module):
                     ),
                     ("dec_tanh6", nn.Tanh()),
                     ("dec_telement",
-                        TrainableEltwiseLayer(self.input_shape),
+                        TrainableEltwiseLayer(),
                      ),
                 ]
             )
@@ -199,7 +199,7 @@ class CAE(nn.Module):
         decoded = self.decoder(encoded)
         return encoded, decoded
     
-    def symp_prediction(self, input):
+    def symp_forward(self, input):
         encoded = self.encoder(input)
         decoded = self.decoder(encoded)
-        return symexp(decoded)
+        return encoded, symexp(decoded)

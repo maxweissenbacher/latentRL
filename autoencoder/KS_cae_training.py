@@ -60,10 +60,10 @@ def train():
 
     save_config(modelpath / "ks.json", ks_data)
     save_config(modelpath / "wandb_config.json", dict(wand.config))
-    input_shape = (wandb.config.batch_size, 1, ks_data["N_x"])
+    input_shape = (wandb.config.batch_size, 1, ks_data["N_x"]) #hardcoded output shape in the autoencoder...
     print(f"Latent size {wandb.config.latent_size}")
-    batchsize = wandb.config.batch_size
-    model = CAE(input_shape, wandb.config.latent_size, weight_init_name=wandb.config.weight_init_name
+    batchsize = wandb.config.batch_size 
+    model = CAE(wandb.config.latent_size, weight_init_name=wandb.config.weight_init_name
     ).to(device)
     # Set best model state to current model
     best_model_state_dict = model.state_dict()
