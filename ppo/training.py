@@ -12,8 +12,6 @@ from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from torchrl.objectives.value.advantages import GAE
 from torchrl.record.loggers import generate_exp_name
 from ppo.models_ppo import make_ppo_models
-from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
-from env.cylinder_flow_env import make_parallel_cylinder_env, make_cylinder_eval_env
 # from utils.save_model import save_model
 import wandb
 import hydra
@@ -37,9 +35,11 @@ def main(cfg: "DictConfig"):
 
     # Create environments
     if cfg.env_name == 'KS':
+        from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
         train_env = make_parallel_ks_env(cfg)
         eval_env = make_ks_eval_env(cfg)
     elif cfg.env_name == 'CYLINDER':
+        from env.cylinder_flow_env import make_parallel_cylinder_env, make_cylinder_eval_env
         train_env = make_parallel_cylinder_env(cfg)
         eval_env = make_cylinder_eval_env(cfg)
     else:
