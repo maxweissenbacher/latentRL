@@ -51,7 +51,7 @@ if __name__ == '__main__':
     # ---------------------------
 
     # Load metrics for attention from WandB
-    project_name = "ppo_cae_test"
+    project_name = "LatentRL_solarsweep1"
     df_list = {}
     df_list['SAC'] = load_runs_from_wandb_project(
         path="why_are_all_the_good_names_taken_aaa/" + project_name,
