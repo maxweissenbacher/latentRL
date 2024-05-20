@@ -40,7 +40,7 @@ def train():
     modelpath.mkdir(parents=True, exist_ok=True)
 
     ks_data = {
-        "L": 22,
+        "L": 22,  # TO-DO: this is not correct
         "dt": 0.05,
         "N_x": 256,
         "batchsize": 128,
