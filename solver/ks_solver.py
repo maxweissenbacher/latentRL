@@ -31,7 +31,7 @@ class KS:
         self.n = torch.tensor(N, dtype=torch.int, device=self.device)  # Ensure that N is integer
         self.dt = torch.tensor(dt, device=self.device)
         self.x = torch.arange(self.n, device=self.device) * self.L / self.n
-        self.k = (self.n * torch.fft.fftfreq(self.n)[0:self.n // 2 + 1] * 2 * torch.pi / self.L).to(self.device)
+        self.k = (self.n * torch.fft.fftfreq(self.n, device=self.device)[0:self.n // 2 + 1] * 2 * torch.pi / self.L).to(self.device)
         self.ik = 1j * self.k  # spectral derivative operator
         self.lin = self.k ** 2 - self.k ** 4  # Fourier multipliers for linear term
 
