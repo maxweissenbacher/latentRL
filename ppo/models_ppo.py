@@ -29,13 +29,9 @@ def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
         modelpath = Path(path_to_model)
         cae = load_cae_model(modelpath)
         encoder = cae.encoder
-        cae = CAEWrapper(model=cae)
-        encoder = CAEWrapper(model=encoder)
-        # Freeze parameters
-        for param in encoder.parameters():
-            param.requires_grad = False
-        for param in cae.parameters():
-            param.requires_grad = False
+        decoder = cae.decoder
+        encoder = CAEWrapper(model=encoder, mode='encode')
+        decoder = CAEWrapper(model=decoder, mode='decode')
         # Set correct input size for MLP
         mlp_input_size = encoder.cae.enc_linear_dense.out_features
         print("Using CAE")
@@ -63,30 +59,33 @@ def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
             torch.nn.init.orthogonal_(layer.weight, 1.0)
             layer.bias.data.zero_()
 
-    policy_list = []
     if path_to_model:
-        policy_list.append(encoder)
+        encoder_module = TensorDictModule(
+            module=encoder,
+            in_keys=["observation"],
+            out_keys=["latent_state"],
+        )
+        decoder_module = TensorDictModule(
+            module=decoder,
+            in_keys=["latent_state"],
+            out_keys=["cae_output"],
+        )
+
+    policy_list = []
     policy_list.append(policy_mlp)
     policy_list.append(
         AddStateIndependentNormalScale(action_spec.shape[-1], scale_lb=1e-8)
     )
-
-    # Add state-independent normal scale
     policy_mlp = torch.nn.Sequential(*policy_list)
 
     policy_module = TensorDictModule(
         module=policy_mlp,
-        in_keys=["observation"],
+        in_keys=["latent_state"] if path_to_model else ["observation"],
         out_keys=["loc", "scale"],
     )
 
     if path_to_model:
-        cae_module = TensorDictModule(
-            module=cae,
-            in_keys=["observation"],
-            out_keys=["cae_output"]
-        )
-        policy_module = TensorDictSequential(policy_module, cae_module)
+        policy_module = TensorDictSequential(encoder_module, decoder_module, policy_module)
 
     # Add probabilistic sampling of the actions
     policy_module = ProbabilisticActor(

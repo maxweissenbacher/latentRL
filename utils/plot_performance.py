@@ -33,6 +33,7 @@ def load_runs_from_wandb_project(path, algorithm):
                 cae_absolute_errors.append(row["eval/cae_absolute_L2_error"])
         else:
             cae_errors = len(rewards) * [0.]
+            cae_absolute_errors = len(rewards) * [0.]
         df[run.name, use_cae, 'reward'] = rewards
         df[run.name, use_cae, 'errors'] = cae_errors
         df[run.name, use_cae, 'abs_errors'] = cae_absolute_errors

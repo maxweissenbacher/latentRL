@@ -12,6 +12,7 @@ from torchrl.objectives import ClipPPOLoss, ValueEstimators
 from torchrl.objectives.value.advantages import GAE
 from torchrl.record.loggers import generate_exp_name
 from ppo.models_ppo import make_ppo_models
+from autoencoder.utils.loss_function import symlog
 # from utils.save_model import save_model
 import wandb
 import hydra
@@ -96,11 +97,17 @@ def main(cfg: "DictConfig"):
         average_gae=False,
     )
 
-    # Create optimizers
-    trainable_actor_params = filter(lambda p: p.requires_grad, actor.parameters())
-    actor_optim = torch.optim.Adam(trainable_actor_params, lr=cfg.optim.lr, eps=1e-5)
-    trainable_critic_params = filter(lambda p: p.requires_grad, critic.parameters())
-    critic_optim = torch.optim.Adam(trainable_critic_params, lr=cfg.optim.lr, eps=1e-5)
+    cae_loss = torch.nn.MSELoss()
+
+    # Create optimizers for agent training
+    actor_mlp_params = actor.module[0].select_subsequence(["latent_state"], ["loc", "scale"]).parameters()
+    actor_optim = torch.optim.Adam(actor_mlp_params, lr=cfg.optim.lr, eps=1e-5)
+    critic_mlp_params = critic.module[1].parameters()  # only use MLP
+    critic_optim = torch.optim.Adam(critic_mlp_params, lr=cfg.optim.lr, eps=1e-5)
+
+    # Create optimizers for CAE training
+    cae_params = actor.module[0].select_subsequence(["observation"], ["cae_output"]).parameters()
+    cae_optim = torch.optim.Adam(cae_params, lr=1e-3)
 
     # Create logger
     exp_name = generate_exp_name("PPO", cfg.env.exp_name)
@@ -215,6 +222,22 @@ def main(cfg: "DictConfig"):
                     "train/cae_relative_L2_error": cae_rel_error,
                 }
             )
+
+        # CAE training
+        if True:  # train only every x iterations
+            num_cae_epochs = 10
+            cae_batch_size = 10
+            for cae_epoch in range(num_cae_epochs):
+                sample = full_buffer.sample(cae_batch_size)
+                u = sample["u"]
+                actor(sample)
+                output = sample.get("cae_output")
+                # Both u and cae_output are in physical space
+                # We compute the loss in symlog space
+                cae_loss = cae_loss(symlog(output), symlog(u))
+                cae_optim.zero_grad()
+                cae_loss.backward()
+                cae_optim.step()
 
         # Evaluation
         if i % cfg.logger.eval_iter == 0:
