@@ -42,6 +42,8 @@ optim:
   lr: 1e-4
   weight_decay: 0.0
   anneal_lr: True
+  cae_batch_size: 10
+  buffer_size: $cfg.collector.total_frames
 
 # loss
 loss:

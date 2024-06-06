@@ -75,8 +75,11 @@ def main(cfg: "DictConfig"):
     )
 
     # Create replay buffer to remember entire history
+    cae_sampler = SamplerWithoutReplacement()
     full_buffer = TensorDictReplayBuffer(
-        storage=LazyMemmapStorage(total_frames),
+        storage=LazyMemmapStorage(cfg.optim.buffer_size),
+        sampler=cae_sampler,
+        batch_size=cfg.optim.cae_batch_size,
     )
 
     # Create loss and adv modules
@@ -217,27 +220,35 @@ def main(cfg: "DictConfig"):
             cae_output = data["cae_output"].detach().cpu().numpy()
             u = data["u"].detach().cpu().numpy()
             cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
+            cae_abs_error = np.linalg.norm(cae_output - u)
             log_info.update(
                 {
                     "train/cae_relative_L2_error": cae_rel_error,
+                    "train/cae_absolute_L2_error": cae_abs_error,
                 }
             )
 
         # CAE training
         if True:  # train only every x iterations
             num_cae_epochs = 10
-            cae_batch_size = 10
             for cae_epoch in range(num_cae_epochs):
-                sample = full_buffer.sample(cae_batch_size)
-                u = sample["u"]
-                actor(sample)
-                output = sample.get("cae_output")
-                # Both u and cae_output are in physical space
-                # We compute the loss in symlog space
-                cae_loss = cae_loss(symlog(output), symlog(u))
-                cae_optim.zero_grad()
-                cae_loss.backward()
-                cae_optim.step()
+                for l, batch in enumerate(full_buffer):
+                    u = batch["u"]
+                    actor(batch)
+                    output = batch.get("cae_output")
+                    # Both u and cae_output are in physical space
+                    # We compute the loss in symlog space
+                    cae_loss = cae_loss(symlog(output), symlog(u))
+                    cae_optim.zero_grad()
+                    cae_loss.backward()
+                    cae_optim.step()
+
+            log_info.update(
+                {
+                    "cae/initial_loss": eval_reward,
+                    "cae/final_loss": eval_reward,
+                }
+            )
 
         # Evaluation
         if i % cfg.logger.eval_iter == 0:
