@@ -14,20 +14,22 @@ from torchrl.modules import MLP, ProbabilisticActor, TanhNormal, ValueOperator
 from autoencoder.visualize_cae_model import load_cae_model
 from pathlib import Path
 from utils.wrappers import CAEWrapper
+from autoencoder.convolutional_autoencoder import CAE
 
 
 # ====================================================================
 # Model utils
 # --------------------------------------------------------------------
-def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
+def make_ppo_models(cfg, observation_spec, action_spec, use_cae=False):
     # Define input shape
     observation_size = observation_spec["observation"].shape[-1]
     mlp_input_size = observation_size
 
-    if path_to_model:
+    if use_cae:
         # Load trained CAE model
-        modelpath = Path(path_to_model)
-        cae = load_cae_model(modelpath)
+        # modelpath = Path(use_cae)
+        # cae = load_cae_model(modelpath)  # we're not loading a trained model now
+        cae = CAE(latent_size=cfg.cae.latent_size, weight_init_name=cfg.cae.weight_init_name)
         encoder = cae.encoder
         decoder = cae.decoder
         encoder = CAEWrapper(model=encoder, mode='encode')
@@ -59,7 +61,7 @@ def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
             torch.nn.init.orthogonal_(layer.weight, 1.0)
             layer.bias.data.zero_()
 
-    if path_to_model:
+    if use_cae:
         encoder_module = TensorDictModule(
             module=encoder,
             in_keys=["observation"],
@@ -80,11 +82,11 @@ def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
 
     policy_module = TensorDictModule(
         module=policy_mlp,
-        in_keys=["latent_state"] if path_to_model else ["observation"],
+        in_keys=["latent_state"] if use_cae else ["observation"],
         out_keys=["loc", "scale"],
     )
 
-    if path_to_model:
+    if use_cae:
         policy_module = TensorDictSequential(encoder_module, decoder_module, policy_module)
 
     # Add probabilistic sampling of the actions
@@ -113,7 +115,7 @@ def make_ppo_models(cfg, observation_spec, action_spec, path_to_model=None):
             layer.bias.data.zero_()
 
     value_list = []
-    if path_to_model:
+    if use_cae:
         value_list.append(encoder)
     value_list.append(value_mlp)
 

@@ -51,7 +51,7 @@ def main(cfg: "DictConfig"):
         cfg=cfg,
         observation_spec=train_env.observation_spec,
         action_spec=train_env.action_spec,
-        path_to_model=cfg.env.path_to_cae_model,
+        use_cae=cfg.cae.use_cae,
     )
     actor, critic = actor.to(device), critic.to(device)
 
@@ -77,7 +77,7 @@ def main(cfg: "DictConfig"):
     # Create replay buffer to remember entire history
     cae_sampler = SamplerWithoutReplacement()
     full_buffer = TensorDictReplayBuffer(
-        storage=LazyMemmapStorage(cfg.optim.buffer_size),
+        storage=LazyMemmapStorage(cfg.optim.cae_buffer_size),
         sampler=cae_sampler,
         batch_size=cfg.optim.cae_batch_size,
     )
@@ -100,7 +100,7 @@ def main(cfg: "DictConfig"):
         average_gae=False,
     )
 
-    cae_loss = torch.nn.MSELoss()
+    cae_loss_module = torch.nn.MSELoss()
 
     # Create optimizers for agent training
     actor_mlp_params = actor.module[0].select_subsequence(["latent_state"], ["loc", "scale"]).parameters()
@@ -229,24 +229,30 @@ def main(cfg: "DictConfig"):
             )
 
         # CAE training
-        if True:  # train only every x iterations
-            num_cae_epochs = 10
-            for cae_epoch in range(num_cae_epochs):
+        if i % cfg.optim.cae_training_interval == 0:
+            cae_losses = []
+            for cae_epoch in range(cfg.optim.cae_epochs):
+                epoch_losses = []
                 for l, batch in enumerate(full_buffer):
-                    u = batch["u"]
+                    batch = batch.to(device)
                     actor(batch)
-                    output = batch.get("cae_output")
+                    u, output = batch.get("u"), batch.get("cae_output")
                     # Both u and cae_output are in physical space
                     # We compute the loss in symlog space
-                    cae_loss = cae_loss(symlog(output), symlog(u))
+                    cae_loss = cae_loss_module(symlog(output), symlog(u))
                     cae_optim.zero_grad()
                     cae_loss.backward()
                     cae_optim.step()
+                    epoch_losses.append(cae_loss.detach().cpu().numpy())
+                cae_losses.append(np.mean(epoch_losses))
+
+            cae_losses = np.asarray(cae_losses)
 
             log_info.update(
                 {
-                    "cae/initial_loss": eval_reward,
-                    "cae/final_loss": eval_reward,
+                    "cae/initial_loss": cae_losses[0],
+                    "cae/final_loss": cae_losses[-1],
+                    "cae/losses": cae_losses,
                 }
             )
 

@@ -42,8 +42,16 @@ optim:
   lr: 1e-4
   weight_decay: 0.0
   anneal_lr: True
-  cae_batch_size: 10
-  buffer_size: $cfg.collector.total_frames
+  cae_batch_size: 512
+  cae_buffer_size: ${collector.total_frames}
+  cae_epochs: 2 # 1000
+  cae_training_interval: 10
+
+# CAE parameters
+cae:
+  latent_size: 16
+  weight_init_name: xavier_normal
+  use_cae: True
 
 # loss
 loss:
