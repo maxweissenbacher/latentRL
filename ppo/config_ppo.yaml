@@ -30,10 +30,10 @@ collector:
 # logger
 logger:
   backend: wandb
-  mode: offline
+  mode: online
   eval_iter: 10  # Evaluate every x batches
   test_episode_length: 1_000
-  project_name: LatentRL
+  project_name: LatentRL_RL+CAE_test1
   team_name: why_are_all_the_good_names_taken_aaa
   save_replay_buffer: False
 

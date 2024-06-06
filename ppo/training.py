@@ -246,13 +246,15 @@ def main(cfg: "DictConfig"):
                     epoch_losses.append(cae_loss.detach().cpu().numpy())
                 cae_losses.append(np.mean(epoch_losses))
 
-            cae_losses = np.asarray(cae_losses)
+            plot_data = [[x, y] for (x, y) in zip(list(range(len(cae_losses))), cae_losses)]
+
+            table = wandb.Table(data=plot_data, columns=["cae_epoch", "loss"])
 
             log_info.update(
                 {
                     "cae/initial_loss": cae_losses[0],
                     "cae/final_loss": cae_losses[-1],
-                    "cae/losses": cae_losses,
+                    "cae/losses": wandb.plot.line(table, "cae_epoch", "loss", title="CAE loss"),
                 }
             )
 
