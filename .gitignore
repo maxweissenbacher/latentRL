@@ -4,4 +4,8 @@ __pycache__/
 .idea
 wandb/
 Cyl_env_test_script*
+results/*
+# outputs/*
+episode_averages/*
+mesh/*
 

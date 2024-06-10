@@ -27,25 +27,48 @@ def main(cfg: "DictConfig"):
         print(f'Cuda version: {torch.version.cuda}')
 
     # Correct for frame_skip
+    assert cfg.loss.mini_batch_size < cfg.collector.frames_per_batch, \
+           "Mini_batch_size should be smaller than frames_per_batch"
+    assert cfg.collector.total_frames > cfg.collector.frames_per_batch, \
+           "total_frames should be larger than frames_per_batch"
     frame_skip = cfg.env.frame_skip
     total_frames = cfg.collector.total_frames // frame_skip
     frames_per_batch = cfg.collector.frames_per_batch // frame_skip
     max_episode_length = cfg.collector.max_episode_length // frame_skip
     mini_batch_size = cfg.loss.mini_batch_size // frame_skip
 
+    # Create logger
+    exp_name = generate_exp_name("PPO", cfg.env.exp_name)
+    if cfg.logger.project_name is None:
+        raise ValueError("WandB project name must be specified in config.")
+    
+    wandb.init(
+        mode=str(cfg.logger.mode),
+        project=str(cfg.logger.project_name),
+        # entity=str(cfg.logger.team_name),
+        name=exp_name,
+        config=dict(cfg),
+    )
+    
     # Create environments
     if cfg.env_name == 'KS':
         from env.ks_env_utils import make_parallel_ks_env, make_ks_eval_env
         train_env = make_parallel_ks_env(cfg)
         eval_env = make_ks_eval_env(cfg)
+        print("Using Env: KS")
+        
     elif cfg.env_name == 'CYLINDER':
+        print("Using Env: Cylinder")
+        print("Number of Envs: ", cfg.cyl.num_envs)
         from env.cylinder_flow_env import make_parallel_cylinder_env, make_cylinder_eval_env
-        train_env = make_parallel_cylinder_env(cfg)
-        eval_env = make_cylinder_eval_env(cfg)
+        train_env = make_parallel_cylinder_env(cfg, exp_name)
+        eval_env  = make_cylinder_eval_env(cfg, exp_name)
+        
     else:
         raise RuntimeError(f"Expected cfg.env_name to be either KS or CYLINDER. Got {cfg.env_name}.")
 
     # Create models
+    print("Creating Models")
     actor, critic = make_ppo_models(
         cfg=cfg,
         observation_spec=train_env.observation_spec,
@@ -55,6 +78,7 @@ def main(cfg: "DictConfig"):
     actor, critic = actor.to(device), critic.to(device)
 
     # Create collector
+    print("Creating Collector")
     collector = SyncDataCollector(
         train_env,
         policy=actor,
@@ -65,6 +89,7 @@ def main(cfg: "DictConfig"):
         # max_frames_per_traj=max_episode_length
     )
 
+    print("Creating Data Buffer")
     # Create data buffer
     sampler = SamplerWithoutReplacement()
     data_buffer = TensorDictReplayBuffer(
@@ -73,11 +98,13 @@ def main(cfg: "DictConfig"):
         batch_size=mini_batch_size,
     )
 
+    print("Create replay buffer to remember history")
     # Create replay buffer to remember entire history
     full_buffer = TensorDictReplayBuffer(
         storage=LazyMemmapStorage(total_frames),
     )
 
+    print("create clipPPOloss")
     # Create loss and adv modules
     loss_module = ClipPPOLoss(
         actor=actor,
@@ -102,18 +129,7 @@ def main(cfg: "DictConfig"):
     trainable_critic_params = filter(lambda p: p.requires_grad, critic.parameters())
     critic_optim = torch.optim.Adam(trainable_critic_params, lr=cfg.optim.lr, eps=1e-5)
 
-    # Create logger
-    exp_name = generate_exp_name("PPO", cfg.env.exp_name)
-    if cfg.logger.project_name is None:
-        raise ValueError("WandB project name must be specified in config.")
-    wandb.init(
-        mode=str(cfg.logger.mode),
-        project=str(cfg.logger.project_name),
-        entity=str(cfg.logger.team_name),
-        name=exp_name,
-        config=dict(cfg),
-    )
-
+    print("Starting main loop")
     # Main loop
     collected_frames = 0
     num_network_updates = 0
@@ -136,7 +152,10 @@ def main(cfg: "DictConfig"):
     cfg_loss_clip_epsilon = cfg.loss.clip_epsilon
     losses = TensorDict({}, batch_size=[cfg_loss_ppo_epochs, num_mini_batches])
 
+    print("Starting training Loop")
     for i, data in enumerate(collector):
+        print("######################  data shape : ", data.shape)
+        print("############# i: ", i)
         log_info = {}
         sampling_time = time.time() - sampling_start
         frames_in_batch = data.numel()
@@ -145,7 +164,7 @@ def main(cfg: "DictConfig"):
 
         training_start = time.time()
         for j in range(cfg_loss_ppo_epochs):
-
+            print("############# j: ", j)
             # Compute GAE
             with torch.no_grad():
                 data = adv_module(data)
@@ -156,7 +175,8 @@ def main(cfg: "DictConfig"):
             full_buffer.extend(data_reshape)
 
             for k, batch in enumerate(data_buffer):
-
+                
+                print("batch: ", batch.shape)
                 # Get a data batch
                 batch = batch.to(device)
 
@@ -216,56 +236,56 @@ def main(cfg: "DictConfig"):
                 }
             )
 
-        # Evaluation
-        if i % cfg.logger.eval_iter == 0:
-            with set_exploration_type(ExplorationType.MODE), torch.no_grad():
-                eval_start = time.time()
-                eval_rollout = eval_env.rollout(
-                    cfg.logger.test_episode_length,
-                    actor,
-                    auto_cast_to_device=True,
-                    break_when_any_done=True,
-                )
-                eval_time = time.time() - eval_start
-                # Compute total reward (norm of solution + norm of actuation)
-                eval_reward = eval_rollout["next", "reward"].mean(-2).mean().item()
-                last_reward = eval_rollout["next", "reward"][..., -1, :].mean().item()
-                # Compute u component of reward
-                eval_reward_u = - torch.linalg.norm(eval_rollout["next", "u"], dim=-1).mean(-1).mean().item()
-                last_reward_u = - torch.linalg.norm(eval_rollout["next", "u"][..., -1, :], dim=-1).mean().item()
-                # Compute mean and std of actuation
-                mean_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).mean(-1).mean().item()
-                std_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).std(-1).mean().item()
-                # Compute length of rollout
-                terminated = eval_rollout["terminated"].nonzero()
-                if terminated.nelement() > 0:
-                    rollout_episode_length = terminated[0][0].item()
-                else:
-                    rollout_episode_length = cfg.logger.test_episode_length
-                # Compute CAE accuracy during evaluation rollout
-                if cfg.env.path_to_cae_model:
-                    cae_output = eval_rollout["cae_output"].detach().cpu().numpy()
-                    u = eval_rollout["u"].detach().cpu().numpy()
-                    cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
-                    cae_abs_error = np.linalg.norm(cae_output - u)
+        # # Evaluation
+        # if i % cfg.logger.eval_iter == 0:
+        #     with set_exploration_type(ExplorationType.MODE), torch.no_grad():
+        #         eval_start = time.time()
+        #         eval_rollout = eval_env.rollout(
+        #             cfg.logger.test_episode_length,
+        #             actor,
+        #             auto_cast_to_device=True,
+        #             break_when_any_done=True,
+        #         )
+        #         eval_time = time.time() - eval_start
+        #         # Compute total reward (norm of solution + norm of actuation)
+        #         eval_reward = eval_rollout["next", "reward"].mean(-2).mean().item()
+        #         last_reward = eval_rollout["next", "reward"][..., -1, :].mean().item()
+        #         # Compute u component of reward
+        #         eval_reward_u = - torch.linalg.norm(eval_rollout["next", "u"], dim=-1).mean(-1).mean().item()
+        #         last_reward_u = - torch.linalg.norm(eval_rollout["next", "u"][..., -1, :], dim=-1).mean().item()
+        #         # Compute mean and std of actuation
+        #         mean_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).mean(-1).mean().item()
+        #         std_actuation = torch.linalg.norm(eval_rollout["action"], dim=-1).std(-1).mean().item()
+        #         # Compute length of rollout
+        #         terminated = eval_rollout["terminated"].nonzero()
+        #         if terminated.nelement() > 0:
+        #             rollout_episode_length = terminated[0][0].item()
+        #         else:
+        #             rollout_episode_length = cfg.logger.test_episode_length
+        #         # Compute CAE accuracy during evaluation rollout
+        #         if cfg.env.path_to_cae_model:
+        #             cae_output = eval_rollout["cae_output"].detach().cpu().numpy()
+        #             u = eval_rollout["u"].detach().cpu().numpy()
+        #             cae_rel_error = np.linalg.norm(cae_output - u) / np.linalg.norm(u)
+        #             cae_abs_error = np.linalg.norm(cae_output - u)
 
-            log_info.update(
-                {
-                    "eval/reward": eval_reward,
-                    "eval/last_reward": last_reward,
-                    "eval/mean_actuation": mean_actuation,
-                    "eval/std_actuation": std_actuation,
-                    "eval/time": eval_time,
-                    "eval/episode_length": rollout_episode_length,
-                }
-            )
-            if cfg.env.path_to_cae_model:
-                log_info.update(
-                    {
-                        "eval/cae_relative_L2_error": cae_rel_error,
-                        "eval/cae_absolute_L2_error": cae_abs_error,
-                    }
-                )
+        #     log_info.update(
+        #         {
+        #             "eval/reward": eval_reward,
+        #             "eval/last_reward": last_reward,
+        #             "eval/mean_actuation": mean_actuation,
+        #             "eval/std_actuation": std_actuation,
+        #             "eval/time": eval_time,
+        #             "eval/episode_length": rollout_episode_length,
+        #         }
+        #     )
+        #     if cfg.env.path_to_cae_model:
+        #         log_info.update(
+        #             {
+        #                 "eval/cae_relative_L2_error": cae_rel_error,
+        #                 "eval/cae_absolute_L2_error": cae_abs_error,
+        #             }
+        #         )
 
         # Checkpoint the model and replay buffer
         # if (i % 10 == 0 and i > 0) or i == total_frames // frames_per_batch:

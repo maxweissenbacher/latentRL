@@ -62,7 +62,7 @@ class Env2DCylinderModified(gym.Env):
 
     def __init__(self, path_root, geometry_params, flow_params, solver_params, output_params,
                  optimization_params, inspection_params, n_iter_make_ready=None, verbose=0, size_history=2000,
-                 reward_function='plain_drag', size_time_state=50, number_steps_execution=1, simu_name="Simu"):
+                 reward_function='plain_drag', size_time_state=50, number_steps_execution=1, simu_name="Simu", sim_log_name="Sim"):
         """
 
         """
@@ -91,12 +91,15 @@ class Env2DCylinderModified(gym.Env):
         self.simu_name = simu_name
         self.env_number = inspection_params['index']
 
-
+        self.output_filename = "Cyl_output/"+sim_log_name+"/"+simu_name+"/"
+        if(not os.path.exists(self.output_filename)):
+            os.makedirs(self.output_filename,exist_ok=True)
+            
         # If previous output.csv (epidosde avgs) exists, obtain its last row to get last simulated episode number
         name=f'{self.env_number}_output.csv'
         last_row = None
-        if(os.path.exists("saved_models/"+name)):
-            with open("saved_models/"+name, 'r') as f:
+        if(os.path.exists(self.output_filename+"saved_models/"+name)):
+            with open(self.output_filename+"saved_models/"+name, 'r') as f:
                 for row in reversed(list(csv.reader(f, delimiter=";", lineterminator="\n"))):
                     last_row = row
                     break
@@ -309,7 +312,7 @@ class Env2DCylinderModified(gym.Env):
             self.u_, self.p_ = self.flow.evolve(self.Qs)
             path=''
             if "dump_vtu" in self.inspection_params:
-                path = 'results/area_out.pvd'
+                path = self.output_filename+'results/area_out.pvd'
             self.area_probe = RecirculationAreaProbe(self.u_, 0, store_path=path)
             if self.verbose > 0:
                 print("Compute initial flow for {} steps".format(self.n_iter_make_ready))
@@ -340,6 +343,10 @@ class Env2DCylinderModified(gym.Env):
             # save buffer dict
             with open('mesh/dict_history_parameters.pkl', 'wb') as f:
                 pickle.dump(self.history_parameters, f, pickle.HIGHEST_PROTOCOL)
+            
+            with open(self.output_filename+'mesh/dict_history_parameters.pkl', 'wb') as f:
+                pickle.dump(self.history_parameters, f, pickle.HIGHEST_PROTOCOL)
+
 
         # ----------------------------------------------------------------------
         # if reading from disk (no remesh), show to check everything ok
@@ -354,7 +361,7 @@ class Env2DCylinderModified(gym.Env):
             self.u_, self.p_ = self.flow.evolve(self.Qs)  # Initial step with Qs = 0
             path=''
             if "dump_vtu" in self.inspection_params:
-                path = 'results/area_out.pvd'
+                path = self.output_filename+'results/area_out.pvd'
             self.area_probe = RecirculationAreaProbe(self.u_, 0, store_path=path)
 
             self.probes_values = self.ann_probes.sample(self.u_, self.p_).flatten()
@@ -487,7 +494,7 @@ class Env2DCylinderModified(gym.Env):
         plt.xlabel("Actuation step")
         plt.tight_layout()
         plt.pause(1.0)
-        plt.savefig("saved_figures/control_episode_{}.pdf".format(self.episode_number))
+        plt.savefig(self.output_filename+"saved_figures/control_episode_{}.pdf".format(self.episode_number))
         plt.show()
         plt.pause(2.0)
 
@@ -504,7 +511,7 @@ class Env2DCylinderModified(gym.Env):
         plt.ylim(range_drag_plot)
         plt.tight_layout()
         plt.pause(1.0)
-        plt.savefig("saved_figures/drag_episode_{}.pdf".format(self.episode_number))
+        plt.savefig(self.output_filename+"saved_figures/drag_episode_{}.pdf".format(self.episode_number))
         plt.show()
         plt.pause(2.0)
 
@@ -660,10 +667,10 @@ class Env2DCylinderModified(gym.Env):
         if (self.inspection_params["dump_debug"] != False and self.solver_step % self.inspection_params["dump_debug"] == 0 and self.inspection_params["dump_debug"] < 10000):
             # Save everything that happens in a debug.csv file!
             name = f'{self.env_number}_debug.csv'
-            if(not os.path.exists("saved_models")):
-                os.makedirs("saved_models",exist_ok=True)
-            if(not os.path.exists("saved_models/"+name)):
-                with open("saved_models/"+name, "w") as csv_file:
+            if(not os.path.exists(self.output_filename+"saved_models")):
+                os.makedirs(self.output_filename+"saved_models",exist_ok=True)
+            if(not os.path.exists(self.output_filename+"saved_models/"+name)):
+                with open(self.output_filename+"saved_models/"+name, "w") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow(["Name", "Episode", "Step", "RecircArea", "Drag", "Lift", "Jet0", "Jet1"])
                     spam_writer.writerow([self.simu_name,
@@ -676,7 +683,7 @@ class Env2DCylinderModified(gym.Env):
                                           self.history_parameters["jet_1"].get()[-1]])
                                           
             else:
-                with open("saved_models/"+name, "a") as csv_file:
+                with open(self.output_filename+"saved_models/"+name, "a") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow([self.simu_name,
                                           self.episode_number,
@@ -698,15 +705,15 @@ class Env2DCylinderModified(gym.Env):
         Perform output for single runs (testing of strategies or baseline flow)
         '''
         name = "test_strategy.csv"
-        if(not os.path.exists("saved_models")):
-            os.makedir("saved_models",exist_ok=True)
-        if(not os.path.exists("saved_models/"+name)):
-            with open("saved_models/"+name, "w") as csv_file:
+        if(not os.path.exists(self.output_filename+"saved_models")):
+            os.makedir(self.output_filename+"saved_models",exist_ok=True)
+        if(not os.path.exists(self.output_filename+"saved_models/"+name)):
+            with open(self.output_filename+"saved_models/"+name, "w") as csv_file:
                 spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                 spam_writer.writerow(["Step", "Drag", "Lift", "RecircArea"] + ["Jet" + str(v) for v in range(len(self.Qs))])
                 spam_writer.writerow([self.solver_step, self.history_parameters["drag"].get()[-1], self.history_parameters["lift"].get()[-1], self.history_parameters["recirc_area"].get()[-1]] + [str(v) for v in self.Qs.tolist()])
         else:
-            with open("saved_models/"+name, "a") as csv_file:
+            with open(self.output_filename+"saved_models/"+name, "a") as csv_file:
                 spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                 spam_writer.writerow([self.solver_step, self.history_parameters["drag"].get()[-1], self.history_parameters["lift"].get()[-1], self.history_parameters["recirc_area"].get()[-1]] + [str(v) for v in self.Qs.tolist()])
         return
@@ -732,15 +739,15 @@ class Env2DCylinderModified(gym.Env):
             avg_lift = np.average(self.episode_lifts[len(self.episode_lifts)//2:])
 
             name = f'{self.env_number}_output.csv'
-            if(not os.path.exists("saved_models")):
-                os.makedirs("saved_models",exist_ok=True)
-            if(not os.path.exists("saved_models/"+name)):
-                with open("saved_models/"+name, "w") as csv_file:
+            if(not os.path.exists(self.output_filename+"saved_models")):
+                os.makedirs(self.output_filename+"saved_models",exist_ok=True)
+            if(not os.path.exists(self.output_filename+"saved_models/"+name)):
+                with open(self.output_filename+"saved_models/"+name, "w") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow(["Episode", "AvgDrag", "AvgLift", "AvgRecircArea"])
                     spam_writer.writerow([self.last_episode_number, avg_drag, avg_lift, avg_area])
             else:
-                with open("saved_models/"+name, "a") as csv_file:
+                with open(self.output_filename+"saved_models/"+name, "a") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow([self.last_episode_number, avg_drag, avg_lift, avg_area])
                     
@@ -748,18 +755,18 @@ class Env2DCylinderModified(gym.Env):
             # Also write in Cylinder2DFlowControlWithRL folder (useful to have data of all episodes together in parallel runs)
             name_epi = "output.csv"
             try:
-                if(not os.path.exists("episode_averages")):
-                    os.makedirs("episode_averages",exist_ok=True)
+                if(not os.path.exists(self.output_filename+"episode_averages")):
+                    os.makedirs(self.output_filename+"episode_averages",exist_ok=True)
             except OSError as err:
                 print(err)
 
-            if(not os.path.exists("episode_averages/"+name_epi)):
-                with open("episode_averages/"+name_epi, "w") as csv_file:
+            if(not os.path.exists(self.output_filename+"episode_averages/"+name_epi)):
+                with open(self.output_filename+"episode_averages/"+name_epi, "w") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow(["Episode", "AvgDrag", "AvgLift", "AvgRecircArea","EnvNum","EpiReward"])
                     spam_writer.writerow([self.last_episode_number, avg_drag, avg_lift, avg_area, self.env_number, self.episode_reward])
             else:
-                with open("episode_averages/"+name_epi, "a") as csv_file:
+                with open(self.output_filename+"episode_averages/"+name_epi, "a") as csv_file:
                     spam_writer=csv.writer(csv_file, delimiter=";", lineterminator="\n")
                     spam_writer.writerow([self.last_episode_number, avg_drag, avg_lift, avg_area, self.env_number, self.episode_reward])
 
@@ -774,8 +781,8 @@ class Env2DCylinderModified(gym.Env):
         elif self.inspection_params["dump_vtu"] < 10000 and self.solver_step % self.inspection_params["dump_vtu"] == 0:
 
             if not self.initialized_vtu:  # Initialize results .pvd output if not done already
-                self.u_out = File('results/u_out.pvd')
-                self.p_out = File('results/p_out.pvd')
+                self.u_out = File(self.output_filename+'results/u_out.pvd')
+                self.p_out = File(self.output_filename+'results/p_out.pvd')
                 self.initialized_vtu = True
 
             # Generate vtu files for area, drag and lift
@@ -1149,16 +1156,16 @@ class Env2DCylinderModified(gym.Env):
     def save_wake_ob(self, next_wake_ob):
         # Use the probe setup same as 'inflow64' for collecting the wake statistics
         name = "wake_ob.csv"
-        if (not os.path.exists("saved_models")):
-            os.mkdir("saved_models")
-        if (not os.path.exists("saved_models/" + name)):
-            with open("saved_models/" + name, "w") as csv_state:
+        if (not os.path.exists(self.output_filename+"saved_models")):
+            os.mkdir(self.output_filename+"saved_models")
+        if (not os.path.exists(self.output_filename+"saved_models/" + name)):
+            with open(self.output_filename+"saved_models/" + name, "w") as csv_state:
                 spam_writer = csv.writer(csv_state, delimiter=";", lineterminator="\n")
                 spam_writer.writerow(["Episode", "Step", "wake_ob"])
                 for v in next_wake_ob:
                     spam_writer.writerow([self.episode_number, self.solver_step, v])
         else:
-            with open("saved_models/" + name, "a") as csv_state:
+            with open(self.output_filename+"saved_models/" + name, "a") as csv_state:
                 spam_writer = csv.writer(csv_state, delimiter=";", lineterminator="\n")
                 for v in next_wake_ob:
                     spam_writer.writerow([self.episode_number, self.solver_step, v])
@@ -1166,16 +1173,16 @@ class Env2DCylinderModified(gym.Env):
     def save_state(self, next_state):
 
         name = "state.csv"
-        if (not os.path.exists("saved_models")):
-            os.mkdir("saved_models")
-        if (not os.path.exists("saved_models/" + name)):
-            with open("saved_models/" + name, "w") as csv_state:
+        if (not os.path.exists(self.output_filename+"saved_models")):
+            os.mkdir(self.output_filename+"saved_models")
+        if (not os.path.exists(self.output_filename+"saved_models/" + name)):
+            with open(self.output_filename+"saved_models/" + name, "w") as csv_state:
                 spam_writer = csv.writer(csv_state, delimiter=";", lineterminator="\n")
                 spam_writer.writerow(["Episode", "Step", "State"])
                 for v in next_state:
                     spam_writer.writerow([self.episode_number, self.solver_step, v])
         else:
-            with open("saved_models/" + name, "a") as csv_state:
+            with open(self.output_filename+"saved_models/" + name, "a") as csv_state:
                 spam_writer = csv.writer(csv_state, delimiter=";", lineterminator="\n")
                 for v in next_state:
                     spam_writer.writerow([self.episode_number, self.solver_step, v])
@@ -1183,15 +1190,15 @@ class Env2DCylinderModified(gym.Env):
     def save_reward(self, reward):
 
         name = "rewards.csv"
-        if (not os.path.exists("saved_models")):
-            os.mkdir("saved_models")
-        if (not os.path.exists("saved_models/" + name)):
-            with open("saved_models/" + name, "w") as csv_file:
+        if (not os.path.exists(self.output_filename+"saved_models")):
+            os.mkdir(self.output_filename+"saved_models")
+        if (not os.path.exists(self.output_filename+"saved_models/" + name)):
+            with open(self.output_filename+"saved_models/" + name, "w") as csv_file:
                 spam_writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
                 spam_writer.writerow(["Episode", "Step", "Reward"])
                 spam_writer.writerow([self.episode_number, self.solver_step-1, reward])
         else:
-            with open("saved_models/" + name, "a") as csv_file:
+            with open(self.output_filename+"saved_models/" + name, "a") as csv_file:
                 spam_writer = csv.writer(csv_file, delimiter=";", lineterminator="\n")
                 spam_writer.writerow([self.episode_number, self.solver_step-1, reward])
 

@@ -1,18 +1,21 @@
 # env name
-env_name: KS  # KS or CYLINDER
+env_name: CYLINDER  # KS or CYLINDER
 
 # environment and task specifics
-env:
+ks:
   nu: 0.05
   num_actuators: 20
   num_sensors: 256
   actuator_scale: 0.1
   N: 256
   dt: 0.05
-  num_envs: 3  # Number of parallel training envs
+  envs: 30  # Number of parallel training envs
   burnin: 10000
   target:
-  exp_name: KS
+  
+
+env:
+  exp_name: CYL
   path_to_cae_model:  # if empty or None, no trained autoencoder will be used
   frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
@@ -20,22 +23,28 @@ env:
   seed: 2253461632  # keep fixed for now
   auto_generate_seed: True  # If True, generate a random seed. If False, use the seed value specified above.
 
+cyl: 
+  horizon: 400
+  dump_vtu: False
+  num_envs: 1
+  simulation_duration: 50
+
 # collector
 collector:
-  frames_per_batch: 1_000 # this is the actual number of frames we see in a batch
+  frames_per_batch: 1_000 #1_00 #1_000 # this is the actual number of frames we see in a batch
   max_episode_length: 1_000  # Timesteps (disregarding frame skip)
-  total_frames: 500_000  # Timesteps (disregarding frame skip)
+  total_frames: 500_000 #10_00 #500_000  # Timesteps (disregarding frame skip)  #should not be smaller than frames per batch
   device: cpu
 
 # logger
 logger:
   backend: wandb
-  mode: online
+  mode: offline
   eval_iter: 10  # Evaluate every x batches
   test_episode_length: 1_000
   project_name: LatentRL
-  team_name: why_are_all_the_good_names_taken_aaa
-  save_replay_buffer: False
+  team_name: Team
+  save_replay_buffer: True
 
 # Optim
 optim:
@@ -46,7 +55,7 @@ optim:
 # loss
 loss:
   gamma: 0.9
-  mini_batch_size: 25  # must be less than frames per batch
+  mini_batch_size: 25 # must be less than frames per batch
   ppo_epochs: 10
   gae_lambda: 0.95
   clip_epsilon: 0.2
