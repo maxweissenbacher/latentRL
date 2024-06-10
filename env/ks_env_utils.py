@@ -42,7 +42,7 @@ def make_ks_env(cfg):
         np.linspace(
             start=0.0,
             stop=2 * torch.pi,
-            num=cfg.env.num_actuators,
+            num=cfg.ks.num_actuators,
             endpoint=False
         ),
         device=device
@@ -50,24 +50,24 @@ def make_ks_env(cfg):
     sensor_locs = torch.tensor(
         np.linspace(start=0.0,
                     stop=2 * torch.pi,
-                    num=cfg.env.num_sensors,
+                    num=cfg.ks.num_sensors,
                     endpoint=False
                     ),
         device=device
     )
     env_params = {
-        "nu": float(cfg.env.nu),
+        "nu": float(cfg.ks.nu),
         "actuator_locs": actuator_locs,
         "sensor_locs": sensor_locs,
-        "burn_in": int(cfg.env.burnin),
+        "burn_in": int(cfg.ks.burnin),
         "frame_skip": int(cfg.env.frame_skip),
         "soft_action": bool(cfg.env.soft_action),
         "actuator_loss_weight": 0.0,
-        "actuator_scale": float(cfg.env.actuator_scale),
+        "actuator_scale": float(cfg.ks.actuator_scale),
         "device": cfg.collector.device,
-        "target": cfg.env.target,
-        "N": cfg.env.N,
-        "dt": cfg.env.dt,
+        "target": cfg.ks.target,
+        "N": cfg.ks.N,
+        "dt": cfg.ks.dt,
     }
 
     # Create environments
@@ -88,7 +88,7 @@ def make_ks_eval_env(cfg):
         np.linspace(
             start=0.0,
             stop=2 * torch.pi,
-            num=cfg.env.num_actuators,
+            num=cfg.ks.num_actuators,
             endpoint=False
         ),
         device=device
@@ -96,24 +96,24 @@ def make_ks_eval_env(cfg):
     sensor_locs = torch.tensor(
         np.linspace(start=0.0,
                     stop=2 * torch.pi,
-                    num=cfg.env.num_sensors,
+                    num=cfg.ks.num_sensors,
                     endpoint=False
                     ),
         device=device
     )
     env_params = {
-        "nu": float(cfg.env.nu),
+        "nu": float(cfg.ks.nu),
         "actuator_locs": actuator_locs,
         "sensor_locs": sensor_locs,
-        "burn_in": int(cfg.env.burnin),
+        "burn_in": int(cfg.ks.burnin),
         "frame_skip": int(cfg.env.frame_skip),
         "soft_action": bool(cfg.env.soft_action),
         "actuator_loss_weight": 0.0,
-        "actuator_scale": float(cfg.env.actuator_scale),
+        "actuator_scale": float(cfg.ks.actuator_scale),
         "device": cfg.collector.device,
-        "target": cfg.env.target,
-        "N": cfg.env.N,
-        "dt": cfg.env.dt,
+        "target": cfg.ks.target,
+        "N": cfg.ks.N,
+        "dt": cfg.ks.dt,
     }
     test_env = add_env_transforms(KSenv(**env_params), cfg)
     test_env.eval()

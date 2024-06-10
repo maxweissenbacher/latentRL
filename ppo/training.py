@@ -154,8 +154,9 @@ def main(cfg: "DictConfig"):
 
     print("Starting training Loop")
     for i, data in enumerate(collector):
-        print("######################  data shape : ", data.shape)
-        print("############# i: ", i)
+        # print("######################  data shape : ", data.shape)
+        # print("######################  data : ", data)
+        # print("############# i: ", i)
         log_info = {}
         sampling_time = time.time() - sampling_start
         frames_in_batch = data.numel()
@@ -164,7 +165,7 @@ def main(cfg: "DictConfig"):
 
         training_start = time.time()
         for j in range(cfg_loss_ppo_epochs):
-            print("############# j: ", j)
+            # print("############# j: ", j)
             # Compute GAE
             with torch.no_grad():
                 data = adv_module(data)
@@ -176,7 +177,8 @@ def main(cfg: "DictConfig"):
 
             for k, batch in enumerate(data_buffer):
                 
-                print("batch: ", batch.shape)
+                # print("batch shape: ", batch.shape)
+                # print("batch: ", batch)
                 # Get a data batch
                 batch = batch.to(device)
 

@@ -1,5 +1,5 @@
 # env name
-env_name: CYLINDER  # KS or CYLINDER
+env_name: KS  # KS or CYLINDER
 
 # environment and task specifics
 ks:
@@ -9,31 +9,32 @@ ks:
   actuator_scale: 0.1
   N: 256
   dt: 0.05
-  envs: 30  # Number of parallel training envs
   burnin: 10000
   target:
   
 
 env:
-  exp_name: CYL
+  exp_name: KS
   path_to_cae_model:  # if empty or None, no trained autoencoder will be used
   frame_skip: 1  # Sticky actions
   soft_action: True  # Interpolate the actions over frame_skip frames
   autoreg_action: 0.0  # Autoregressive action hyperparameter
   seed: 2253461632  # keep fixed for now
   auto_generate_seed: True  # If True, generate a random seed. If False, use the seed value specified above.
+  num_envs: 2 #number of parallel envs
 
 cyl: 
-  horizon: 400
+  horizon: 100
+  random_start: 10    #number of timesteps before starting the control to start in between the vortex shedding
   dump_vtu: False
   num_envs: 1
   simulation_duration: 50
 
 # collector
 collector:
-  frames_per_batch: 1_000 #1_00 #1_000 # this is the actual number of frames we see in a batch
+  frames_per_batch: 50 #1_000 # this is the actual number of frames we see in a batch
   max_episode_length: 1_000  # Timesteps (disregarding frame skip)
-  total_frames: 500_000 #10_00 #500_000  # Timesteps (disregarding frame skip)  #should not be smaller than frames per batch
+  total_frames: 100 #500_000  # Timesteps (disregarding frame skip)  #should not be smaller than frames per batch
   device: cpu
 
 # logger

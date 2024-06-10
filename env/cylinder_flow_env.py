@@ -29,6 +29,7 @@ def make_cylinder_env(device, cfg, n_env=1, sim_log_name = "Sim"):
                      single_run=False,
                      horizon=cfg.cyl.horizon,
                      dump_vtu=cfg.cyl.dump_vtu, 
+                     random_start= cfg.cyl.random_start,
                      n_env=n_env,
                      simulation_duration=cfg.cyl.simulation_duration,
                      sim_log_name = sim_log_name
@@ -44,6 +45,7 @@ def make_parallel_cylinder_env(cfg, exp_name):
     # env = ParallelEnv(cfg.cyl.num_envs, make_env_fn)
     env = ParallelEnv(cfg.cyl.num_envs, 
                       [lambda: make_cylinder_env(cfg.collector.device, cfg, n_env, sim_log_name = exp_name + "/train") for n_env in range(cfg.cyl.num_envs)])  
+    # env = ParallelEnv(cfg.cyl.num_envs, [lambda: make_ks for i in range(num_envs)])
     return env
 
 

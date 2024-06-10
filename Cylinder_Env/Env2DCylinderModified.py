@@ -352,11 +352,19 @@ class Env2DCylinderModified(gym.Env):
         # if reading from disk (no remesh), show to check everything ok
         if self.n_iter_make_ready is None:
             # If random_start == True, let's start in a random position of the vortex shedding
-            if self.optimization_params["random_start"]:
+            if self.optimization_params["random_start"] and type(self.optimization_params["random_start"]) != int:
                 rd_advancement = np.random.randint(1712)  # 1712 is the number of steps of a shedding period. Needs to be hardcoded
                 for j in range(rd_advancement):
                     self.flow.evolve(self.Qs)
                 print("Simulated {} iterations before starting the control".format(rd_advancement))
+            
+            elif self.optimization_params["random_start"] and type(self.optimization_params["random_start"]) == int:
+                rd_advancement = self.optimization_params["random_start"] #np.random.randint(1712) For debug
+                for j in range(rd_advancement):
+                    self.flow.evolve(self.Qs)
+                print("Simulated {} iterations before starting the control".format(rd_advancement))
+            
+            
 
             self.u_, self.p_ = self.flow.evolve(self.Qs)  # Initial step with Qs = 0
             path=''
@@ -881,7 +889,7 @@ class Env2DCylinderModified(gym.Env):
                  terminal
                  reward (check env.py and compute_reward() function for the reward used)
         '''
-        action = actions
+        action = actions * 0.1 #scaled for torchrl purposes only, it takes max and min action value to be 1 and -1 respectively
 
 
         if action is None:
