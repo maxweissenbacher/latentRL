@@ -1,5 +1,5 @@
 # env name
-env_name: KS  # KS or CYLINDER
+env_name: CYLINDER  # KS or CYLINDER
 
 # environment and task specifics
 ks:

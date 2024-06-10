@@ -17,3 +17,14 @@
 
 [ ] Train RL agent with and w/o autoencoder
 
+
+# For Cylinder Env install fenics using the following command
+
+conda create -n <ENV_NAME> -c conda-forge fenics  python=3.10.6
+
+# Following this do
+
+pip install -r requirements_cylinder.txt
+
+
+
